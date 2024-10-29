@@ -4,6 +4,7 @@ import { Neo4jModule } from './neo4j/neo4j.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Neo4jScheme } from '@/interfaces';
 import { GraphqlModule } from './graphql/graphql.module';
+import { LlmModule } from './llm/llm.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { GraphqlModule } from './graphql/graphql.module';
       inject: [ConfigService],
     }),
     GraphqlModule,
+    LlmModule,
   ],
   controllers: [AppController],
 })
