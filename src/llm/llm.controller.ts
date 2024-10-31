@@ -1,8 +1,9 @@
 import { Body, Controller, Post, Sse, Query, MessageEvent } from '@nestjs/common';
 import { LlmService } from './llm.service';
 import { PromptDto } from './prompt.dto';
+import { Observable } from 'rxjs';
 
-@Controller({ path: 'llm', host: ['localhost', 'pdnet.saipuram.com'] })
+@Controller('llm')
 export class LlmController {
   #promptStore = new Map<string, string>();
 
