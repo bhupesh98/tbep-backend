@@ -26,6 +26,12 @@ export class Gene {
   hgnc_gene_symbol?: Nullable<string>;
 }
 
+export class GeneBase {
+  Description?: Nullable<string>;
+  Gene_name?: Nullable<string>;
+  ID: string;
+}
+
 export class GeneInteraction {
   gene1: string;
   gene2: string;
@@ -33,7 +39,7 @@ export class GeneInteraction {
 }
 
 export class GeneInteractionOutput {
-  genes: Gene[];
+  genes: GeneBase[];
   links?: Nullable<GeneInteraction[]>;
 }
 

@@ -16,8 +16,14 @@ input InteractionInput {
     interactionType: String!
 }
 
+type GeneBase {
+    ID: ID!
+    Description: String
+    Gene_name: String
+}
+
 type GeneInteractionOutput {
-    genes: [Gene!]!
+    genes: [GeneBase!]!
     links: [GeneInteraction!]
 }
 
