@@ -8,6 +8,7 @@ import {
   GET_GENES_QUERY,
 } from '@/neo4j/neo4j.constants';
 import type { Gene, GeneBase, InteractionInput } from '@/graphql/graphql.schema';
+import { createHash } from 'node:crypto';
 
 @Injectable()
 export class GraphqlService {
@@ -18,7 +19,7 @@ export class GraphqlService {
     const result = await session.run(GET_GENES_QUERY(bringTotalData), { geneIDs });
     await this.neo4jService.releaseSession(session);
     return result.records.map<Record<string, string>>((record) =>
-      bringTotalData ? record.get('g').properties : record.get('g'),
+      bringTotalData ? record.get('genes').properties : record.get('genes'),
     );
   }
 
@@ -44,8 +45,9 @@ export class GraphqlService {
     });
   }
 
-  async getGeneInteractions(input: InteractionInput, order: number) {
-    const session = this.neo4jService.getSession();
+  async getGeneInteractions(input: InteractionInput, order: number, graphName: string) {
+    const graphExists = await this.neo4jService.graphExists(graphName);
+    const session = this.neo4jService.getSession(graphName);
     if (order === 2) {
       order = 0;
       input.geneIDs = (
@@ -58,14 +60,19 @@ export class GraphqlService {
     const result = await session.run<{
       genes: Array<GeneBase>;
       connections: Array<{ gene1: string; gene2: string; score: number }>;
-    }>(GENE_INTERACTIONS_QUERY(order, input.interactionType), {
+    }>(GENE_INTERACTIONS_QUERY(order, input.interactionType, graphExists), {
       geneIDs: input.geneIDs,
       minScore: input.minScore,
+      graphName,
     });
     await this.neo4jService.releaseSession(session);
     return {
       genes: result.records[0]?.get('genes') ?? [],
       links: result.records[0]?.get('connections') ?? [],
     };
+  }
+
+  computeHash(query: string) {
+    return createHash('sha256').update(query).digest('hex');
   }
 }

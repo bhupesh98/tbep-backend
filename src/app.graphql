@@ -14,6 +14,7 @@ input InteractionInput {
     geneIDs: [String!]!
     minScore: Float!
     interactionType: String!
+    graphName: String
 }
 
 type GeneBase {
@@ -25,6 +26,7 @@ type GeneBase {
 type GeneInteractionOutput {
     genes: [GeneBase!]!
     links: [GeneInteraction!]
+    graphName: String
 }
 
 type GeneInteraction {

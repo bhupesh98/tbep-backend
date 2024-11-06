@@ -8,26 +8,6 @@ import { createDriver } from '@/neo4j/neo4j.util';
   providers: [Neo4jService],
 })
 export class Neo4jModule {
-  static forRoot(config: Neo4jConfig): DynamicModule {
-    return {
-      module: Neo4jModule,
-      global: true,
-      providers: [
-        {
-          provide: NEO4J_CONFIG,
-          useValue: config,
-        },
-        {
-          provide: NEO4J_DRIVER,
-          inject: [NEO4J_CONFIG],
-          useFactory: async (config: Neo4jConfig) => createDriver(config),
-        },
-        Neo4jService,
-      ],
-      exports: [Neo4jService],
-    };
-  }
-
   static forRootAsync(options: {
     useFactory: (...args: any[]) => Promise<Neo4jConfig> | Neo4jConfig;
     inject?: InjectionToken[];

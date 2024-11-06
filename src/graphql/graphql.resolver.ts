@@ -1,12 +1,13 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Info, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
 import { Logger } from '@nestjs/common';
 import { Gene, GeneBase, GeneInteractionOutput, InteractionInput } from '@/graphql/graphql.schema';
 import { DiseaseNames } from '@/decorators';
+import type { GraphQLResolveInfo } from 'graphql';
 
 @Resolver()
 export class GraphqlResolver {
-  private logger = new Logger(GraphqlResolver.name);
+  private readonly logger = new Logger(GraphqlResolver.name);
 
   constructor(private readonly graphqlService: GraphqlService) {}
 
@@ -31,9 +32,17 @@ export class GraphqlResolver {
   async getGeneInteractions(
     @Args('input') input: InteractionInput,
     @Args('order') order: number,
+    @Info() info: GraphQLResolveInfo,
   ): Promise<GeneInteractionOutput> {
-    const result = await this.graphqlService.getGeneInteractions(input, order);
+    const graphName =
+      input.graphName ??
+      this.graphqlService.computeHash(JSON.stringify({ ...info.variableValues, geneIDs: input.geneIDs.sort() }));
+    const result = await this.graphqlService.getGeneInteractions(input, order, graphName);
     this.logger.log(`Genes: ${result.genes.length}, Links: ${result.links.length}`);
-    return result;
+    return {
+      genes: result.genes,
+      links: result.links,
+      graphName,
+    };
   }
 }

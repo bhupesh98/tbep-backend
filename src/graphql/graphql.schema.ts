@@ -9,6 +9,7 @@
 
 export class InteractionInput {
   geneIDs: string[];
+  graphName?: Nullable<string>;
   interactionType: string;
   minScore: number;
 }
@@ -40,6 +41,7 @@ export class GeneInteraction {
 
 export class GeneInteractionOutput {
   genes: GeneBase[];
+  graphName?: Nullable<string>;
   links?: Nullable<GeneInteraction[]>;
 }
 

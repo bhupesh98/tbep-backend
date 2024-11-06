@@ -5,12 +5,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Neo4jScheme } from '@/interfaces';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LlmModule } from './llm/llm.module';
+import { AlgorithmModule } from './algorithm/algorithm.module';
+import { RedisModule } from './redis/redis.module';
+import { RedisService } from '@/redis/redis.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'development' ? '.env.development' : '.env',
+      envFilePath: '.env',
+      // cache: true,
     }),
     Neo4jModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
@@ -25,6 +29,12 @@ import { LlmModule } from './llm/llm.module';
     }),
     GraphqlModule,
     LlmModule,
+    AlgorithmModule,
+    {
+      module: RedisModule,
+      global: true,
+      exports: [RedisService],
+    },
   ],
   controllers: [AppController],
 })

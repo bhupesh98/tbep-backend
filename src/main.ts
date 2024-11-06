@@ -3,13 +3,15 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import * as process from 'node:process';
 import * as compression from 'compression';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
   app.enableCors({
     origin: (requestOrigin, callback) => {
-      if (process.env.NODE_ENV === 'production') {
-        const FRONTEND_URL = process.env.FRONTEND_URL;
+      if (configService.get('NODE_ENV', 'development') === 'production') {
+        const FRONTEND_URL = configService.get('FRONTEND_URL');
         if (!FRONTEND_URL || requestOrigin === FRONTEND_URL) {
           callback(null, true);
         } else {
@@ -23,7 +25,7 @@ async function bootstrap() {
     methods: 'GET, POST',
   });
   app.use(compression());
-  await app.listen(process.env.PORT ?? 4000);
+  await app.listen(configService.get('PORT', 4000));
 }
 
 bootstrap()

@@ -7,3 +7,13 @@ export const createDriver = async (config: Neo4jConfig) => {
     neo4j.auth.basic(config.username, config.password),
   );
 };
+
+export function regexp(str: TemplateStringsArray, ...values: string[]) {
+  const pattern = str.reduce((acc, part, index) => {
+    // Insert the dynamic values between the static parts
+    const value = values[index] ? values[index].replace(/[.*+?^=!:${}()|\[\]\/\\]/g, '\\$&') : '';
+    return acc + part + value;
+  }, '');
+  // Return the RegExp object
+  return new RegExp(pattern);
+}
