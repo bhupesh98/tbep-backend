@@ -4,7 +4,7 @@ export const NEO4J_DRIVER: string = 'NEO4J_DRIVER';
 export function GET_GENES_QUERY(bringAll: boolean): string {
   return `MATCH (g:Gene)
     WHERE g.ID IN $geneIDs OR g.Gene_name IN $geneIDs
-    RETURN g ${bringAll ? '' : '{ .ID, .Gene_name, .Description}'} AS genes`;
+    RETURN g ${bringAll ? '' : '{ .ID, .Gene_name, .Description, .hgnc_gene_id }'} AS genes`;
 }
 
 export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, graphExists = true): string {

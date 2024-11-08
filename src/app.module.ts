@@ -14,7 +14,7 @@ import { RedisService } from '@/redis/redis.service';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      // cache: true,
+      cache: true,
     }),
     Neo4jModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({

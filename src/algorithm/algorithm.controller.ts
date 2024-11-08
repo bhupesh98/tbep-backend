@@ -22,8 +22,8 @@ export class AlgorithmController {
   @Get('leiden')
   async leiden(
     @Query('graphName') graphName: string,
-    @Query('resolution', ParseFloatPipe) resolution = 1,
-    @Query('weighted', ParseBoolPipe) weighted = true,
+    @Query('resolution', new ParseFloatPipe({ optional: true })) resolution = 1,
+    @Query('weighted', new ParseBoolPipe({ optional: true })) weighted = true,
   ) {
     const result = await this.algoService.leiden(graphName, resolution, weighted);
     if (!result) throw new HttpException('Graph not found', HttpStatus.NOT_FOUND);
