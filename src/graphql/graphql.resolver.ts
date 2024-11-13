@@ -1,19 +1,25 @@
-import { Args, Info, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
-import { Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Gene, GeneBase, GeneInteractionOutput, InteractionInput } from '@/graphql/graphql.schema';
 import { DiseaseNames } from '@/decorators';
-import type { GraphQLResolveInfo } from 'graphql';
+import { RedisService } from '@/redis/redis.service';
+import { isUUID } from 'class-validator';
 
 @Resolver()
 export class GraphqlResolver {
   private readonly logger = new Logger(GraphqlResolver.name);
 
-  constructor(private readonly graphqlService: GraphqlService) {}
+  constructor(
+    private readonly graphqlService: GraphqlService,
+    private readonly redisService: RedisService,
+  ) {}
 
   @Query(() => String)
-  async sayHello(): Promise<string> {
-    return 'Hello World!';
+  async getUserID(@Context('req') { headers }: { headers: Record<string, string> }): Promise<string> {
+    const header = headers['x-user-id'] || crypto.randomUUID();
+    await this.redisService.redisClient.set(`user:${header}`, '', 'EX', 28800);
+    return header;
   }
 
   @Query(() => [Gene || GeneBase])
@@ -32,12 +38,14 @@ export class GraphqlResolver {
   async getGeneInteractions(
     @Args('input') input: InteractionInput,
     @Args('order') order: number,
-    @Info() info: GraphQLResolveInfo,
+    @Context('req') { headers }: { headers: Record<string, string> },
   ): Promise<GeneInteractionOutput> {
+    const header = headers['x-user-id'];
+    if (!isUUID(header)) throw new HttpException('Correct user ID not found', HttpStatus.UNAUTHORIZED);
     const graphName =
       input.graphName ??
-      this.graphqlService.computeHash(JSON.stringify({ ...info.variableValues, geneIDs: input.geneIDs.sort() }));
-    const result = await this.graphqlService.getGeneInteractions(input, order, graphName);
+      this.graphqlService.computeHash(JSON.stringify({ ...input, geneIDs: input.geneIDs.sort(), order }));
+    const result = await this.graphqlService.getGeneInteractions(input, order, graphName, header);
     this.logger.log(`Genes: ${result.genes.length}, Links: ${result.links.length}`);
     return {
       genes: result.genes,

@@ -5,7 +5,7 @@ schema {
 }
 
 type Query {
-    sayHello: String
+    getUserID: String!
     getGenes(geneIDs: [String!]!): [Gene!]!
     getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
 }

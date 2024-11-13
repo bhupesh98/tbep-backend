@@ -30,9 +30,10 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('Connected to Neo4j');
       this.logger.log(`Database: ${this.config.database}`);
       await this.redisService.onKeyExpiration(async (key: string) => {
-        const graphName = key.replace(regexp`^${this.redisService.keyPrefix}`, '');
+        key = key.replace(regexp`^${this.redisService.keyPrefix}`, '');
+        if (key.startsWith('user:')) return;
         const session = this.getSession();
-        await session.run(GRAPH_DROP_QUERY, { graphName });
+        await session.run(GRAPH_DROP_QUERY, { graphName: key });
         await this.releaseSession(session);
       });
     } catch (error) {
@@ -49,9 +50,28 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     return await this.redisService.checkKey(graphName);
   }
 
-  getSession(graphName?: string, mode: SessionMode = 'READ'): Session {
+  async bindGraph(graphName: string, userID: string) {
+    const [[, val], [, ttl]] = await this.redisService.redisClient.multi().get(userID).ttl(userID).exec();
+    if (val) {
+      if (val === graphName) return;
+      const num = await this.redisService.redisClient.decr(val as string);
+      if (num === 0) {
+        const session = this.getSession();
+        await this.redisService.redisClient.del(val as string);
+        await session.run(GRAPH_DROP_QUERY, { graphName: val });
+        await this.releaseSession(session);
+      }
+    }
+    await this.redisService.redisClient
+      .multi()
+      .incr(graphName)
+      .expire(graphName, this.KEY_EXPIRY)
+      .set(userID, graphName, 'EX', ttl as number)
+      .exec();
+  }
+
+  getSession(mode: SessionMode = 'READ'): Session {
     const pool = mode === 'READ' ? this.readPool : this.writePool;
-    if (graphName) this.redisService.setKeyWithExpiry(graphName, this.KEY_EXPIRY);
     if (pool.length > 0) {
       return pool.pop()!;
     }

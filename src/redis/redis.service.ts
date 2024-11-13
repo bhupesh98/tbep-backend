@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger: Logger = new Logger(RedisService.name);
-  private readonly redisClient: Redis;
+  readonly redisClient: Redis;
   private readonly _redisClient: Redis;
   keyPrefix = 'nestjs:';
 
@@ -35,14 +35,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this._redisClient.on('message', async (_channel, key) => {
       await callback(key);
     });
-  }
-
-  setKeyWithExpiry(key: string, expSec?: number) {
-    if (expSec) {
-      this.redisClient.set(key, '', 'EX', expSec);
-    } else {
-      this.redisClient.set(key, '');
-    }
   }
 
   async checkKey(key: string): Promise<boolean> {

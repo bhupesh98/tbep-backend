@@ -13,6 +13,5 @@ FROM node:22.1-alpine
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
-ENV NODE_ENV=production
 RUN npm install --omit=dev
 CMD ["npm", "run", "start:prod"]

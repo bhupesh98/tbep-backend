@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '@/neo4j/neo4j.service';
 import { FIRST_ORDER_GENES_QUERY, LEIDEN_QUERY, RENEW_QUERY } from '@/neo4j/neo4j.constants';
 import { GraphConfigDto } from '@/algorithm/algorithm.dto';
+import { RedisService } from '@/redis/redis.service';
 
 @Injectable()
 export class AlgorithmService {
-  constructor(private readonly neo4jService: Neo4jService) {}
+  constructor(
+    private readonly neo4jService: Neo4jService,
+    private readonly redisService: RedisService,
+  ) {}
 
   // https://stackoverflow.com/a/54014428/1376947
   hslToHex(h: number, s: number, l: number) {
@@ -28,7 +32,7 @@ export class AlgorithmService {
 
   async leiden(graphName: string, resolution: number, weighted: boolean) {
     if (!(await this.neo4jService.graphExists(graphName))) return;
-    const session = this.neo4jService.getSession(graphName);
+    const session = this.neo4jService.getSession();
     const response = (await session.run(LEIDEN_QUERY(weighted), { graphName, resolution })).records;
     await this.neo4jService.releaseSession(session);
     let count = 0;
@@ -51,7 +55,7 @@ export class AlgorithmService {
 
   async renewSession(graphConfig: GraphConfigDto) {
     if (await this.neo4jService.graphExists(graphConfig.graphName)) return false;
-    const session = this.neo4jService.getSession(graphConfig.graphName);
+    const session = this.neo4jService.getSession();
     if (graphConfig.order === 2) {
       graphConfig.order = 0;
       graphConfig.geneIDs = (
@@ -67,6 +71,7 @@ export class AlgorithmService {
       graphName: graphConfig.graphName,
     });
     await this.neo4jService.releaseSession(session);
+    await this.redisService.redisClient.set(graphConfig.graphName, '', 'EX', 60);
     return true;
   }
 }

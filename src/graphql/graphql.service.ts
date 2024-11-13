@@ -45,9 +45,9 @@ export class GraphqlService {
     });
   }
 
-  async getGeneInteractions(input: InteractionInput, order: number, graphName: string) {
+  async getGeneInteractions(input: InteractionInput, order: number, graphName: string, userID: string) {
     const graphExists = await this.neo4jService.graphExists(graphName);
-    const session = this.neo4jService.getSession(graphName);
+    const session = this.neo4jService.getSession();
     if (order === 2) {
       order = 0;
       input.geneIDs = (
@@ -65,6 +65,7 @@ export class GraphqlService {
       minScore: input.minScore,
       graphName,
     });
+    await this.neo4jService.bindGraph(graphName, `user:${userID}`);
     await this.neo4jService.releaseSession(session);
     return {
       genes: result.records[0]?.get('genes') ?? [],

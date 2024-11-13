@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { GraphqlResolver } from './graphql.resolver';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver } from '@nestjs/apollo';
-import { join } from 'path';
+import { join } from 'node:path';
 import { GraphqlService } from './graphql.service';
 
 @Module({

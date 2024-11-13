@@ -53,7 +53,7 @@ export abstract class IQuery {
 
   abstract getGenes(geneIDs: string[]): Gene[] | Promise<Gene[]>;
 
-  abstract sayHello(): Nullable<string> | Promise<Nullable<string>>;
+  abstract getUserID(): string | Promise<string>;
 }
 
 export type JSON = any;
