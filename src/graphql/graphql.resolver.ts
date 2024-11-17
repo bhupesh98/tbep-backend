@@ -1,10 +1,11 @@
-import { Args, Context, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Info, Int, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Gene, GeneBase, GeneInteractionOutput, InteractionInput } from '@/graphql/graphql.schema';
-import { DiseaseNames } from '@/decorators';
+import { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { RedisService } from '@/redis/redis.service';
 import { isUUID } from 'class-validator';
+import { ConfigService } from '@nestjs/config';
+import type { FieldNode, GraphQLResolveInfo } from 'graphql';
 
 @Resolver()
 export class GraphqlResolver {
@@ -13,31 +14,48 @@ export class GraphqlResolver {
   constructor(
     private readonly graphqlService: GraphqlService,
     private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Query(() => String)
   async getUserID(@Context('req') { headers }: { headers: Record<string, string> }): Promise<string> {
     const header = headers['x-user-id'] || crypto.randomUUID();
-    await this.redisService.redisClient.set(`user:${header}`, '', 'EX', 28800);
+    await this.redisService.redisClient.set(
+      `user:${header}`,
+      '',
+      'EX',
+      this.configService.get('REDIS_USER_EXPIRY', 7200),
+    );
     return header;
   }
 
-  @Query(() => [Gene || GeneBase])
+  @Query(() => [Gene])
   async getGenes(
-    @Args('geneIDs') geneIDs: string[],
-    @DiseaseNames() diseaseNamesInfo: [Array<string>, boolean],
-  ): Promise<(Gene | GeneBase)[]> {
-    const bringTotalData = diseaseNamesInfo[0].length > 0 || diseaseNamesInfo[1];
-    const genes = await this.graphqlService.getGenes(geneIDs, bringTotalData);
-    return bringTotalData
-      ? this.graphqlService.filterGenesByDisease(genes, diseaseNamesInfo[0])
-      : (genes as GeneBase[]);
+    @Args('geneIDs', { type: () => [String] }) geneIDs: string[],
+    @Args('config', { type: () => [DataRequired], nullable: true }) config: Array<DataRequired> | undefined,
+    @Info() info: GraphQLResolveInfo,
+  ): Promise<Gene[]> {
+    const bringMeta = info.fieldNodes[0].selectionSet.selections.some(
+      (selection: FieldNode) => !['ID', 'common', 'disease'].includes(selection?.name.value),
+    );
+    const genes = await this.graphqlService.getGenes(geneIDs, config, bringMeta);
+    return config ? this.graphqlService.filterGenes(genes, config) : genes;
   }
 
-  @Query(() => [GeneInteractionOutput])
+  @Query(() => Header)
+  async getHeaders(@Args('disease', { type: () => String, nullable: true }) disease?: string) {
+    return this.graphqlService.getHeaders(disease);
+  }
+
+  @Query(() => [String])
+  async getDiseases(): Promise<string[]> {
+    return this.graphqlService.getDiseases();
+  }
+
+  @Query(() => GeneInteractionOutput)
   async getGeneInteractions(
-    @Args('input') input: InteractionInput,
-    @Args('order') order: number,
+    @Args('input', { type: () => InteractionInput }) input: InteractionInput,
+    @Args('order', { type: () => Int }) order: number,
     @Context('req') { headers }: { headers: Record<string, string> },
   ): Promise<GeneInteractionOutput> {
     const header = headers['x-user-id'];

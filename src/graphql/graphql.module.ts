@@ -4,22 +4,16 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver } from '@nestjs/apollo';
 import { join } from 'node:path';
 import { GraphqlService } from './graphql.service';
+import GraphQLJSON from 'graphql-type-json';
 
 @Module({
   imports: [
-    GraphQLModule.forRootAsync({
+    GraphQLModule.forRoot({
       driver: ApolloDriver,
-      useFactory: async () => ({
-        sortSchema: true,
-        path: '/graphql',
-        typePaths: ['./**/*.graphql'],
-        playground: true,
-        definitions: {
-          path: join(process.cwd(), 'src/graphql/graphql.schema.ts'),
-          outputAs: 'class' as const,
-          enumsAsTypes: true,
-        },
-      }),
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      resolvers: { JSON: GraphQLJSON },
+      path: '/graphql',
     }),
   ],
   providers: [GraphqlResolver, GraphqlService],

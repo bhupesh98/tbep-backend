@@ -23,7 +23,7 @@ import { RedisService } from '@/redis/redis.service';
         port: configService.get<number>('NEO4J_PORT', 7687),
         username: configService.get<string>('NEO4J_USERNAME', 'neo4j'),
         password: configService.get<string>('NEO4J_PASSWORD'),
-        database: configService.get<string>('NEO4J_DATABASE', 'pdnet'),
+        database: configService.get<string>('NEO4J_DATABASE', 'tbep'),
       }),
       inject: [ConfigService],
     }),

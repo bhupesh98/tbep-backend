@@ -53,20 +53,24 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
   async bindGraph(graphName: string, userID: string) {
     const [[, val], [, ttl]] = await this.redisService.redisClient.multi().get(userID).ttl(userID).exec();
     if (val) {
-      if (val === graphName) return;
-      const num = await this.redisService.redisClient.decr(val as string);
-      if (num === 0) {
-        const session = this.getSession();
-        await this.redisService.redisClient.del(val as string);
-        await session.run(GRAPH_DROP_QUERY, { graphName: val });
-        await this.releaseSession(session);
+      if (val === graphName) {
+        if ((await this.redisService.redisClient.exists(graphName)) === 1) return;
+        await this.redisService.redisClient.multi().incr(graphName).expire(graphName, this.KEY_EXPIRY).exec();
+      } else {
+        const num = await this.redisService.redisClient.decr(val as string);
+        if (num === 0) {
+          const session = this.getSession();
+          await this.redisService.redisClient.del(val as string);
+          await session.run(GRAPH_DROP_QUERY, { graphName: val });
+          await this.releaseSession(session);
+        }
       }
     }
     await this.redisService.redisClient
       .multi()
       .incr(graphName)
       .expire(graphName, this.KEY_EXPIRY)
-      .set(userID, graphName, 'EX', ttl as number)
+      .set(userID, graphName, 'EX', Math.max(ttl as number, 120))
       .exec();
   }
 
