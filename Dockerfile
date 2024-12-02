@@ -5,8 +5,6 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
-# Copy *.graphql files to dist folder
-COPY src/*.graphql dist/
 
 # Stage 2: Run
 FROM node:22.1-alpine

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Neo4jScheme } from '@/interfaces';
+import type { Neo4jScheme } from '@/interfaces';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LlmModule } from './llm/llm.module';
 import { AlgorithmModule } from './algorithm/algorithm.module';

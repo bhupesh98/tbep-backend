@@ -38,8 +38,4 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       await callback(key);
     });
   }
-
-  async checkKey(key: string): Promise<boolean> {
-    return (await this.redisClient.exists(key)) === 1;
-  }
 }

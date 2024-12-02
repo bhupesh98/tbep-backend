@@ -47,7 +47,13 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
   }
 
   async graphExists(graphName: string): Promise<boolean> {
-    return await this.redisService.checkKey(graphName);
+    const session = this.getSession('WRITE');
+    const result = await session.run<{ exists: boolean }>(
+      'CALL gds.graph.exists($graphName) YIELD exists RETURN exists',
+      { graphName },
+    );
+    await this.releaseSession(session, 'WRITE');
+    return result.records[0].get('exists');
   }
 
   async bindGraph(graphName: string, userID: string) {
@@ -55,7 +61,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     if (val) {
       if (val === graphName) {
         if ((await this.redisService.redisClient.exists(graphName)) === 1) return;
-        await this.redisService.redisClient.multi().incr(graphName).expire(graphName, this.KEY_EXPIRY).exec();
       } else {
         const num = await this.redisService.redisClient.decr(val as string);
         if (num === 0) {
