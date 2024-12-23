@@ -47,12 +47,12 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
   }
 
   async graphExists(graphName: string): Promise<boolean> {
-    const session = this.getSession('WRITE');
+    const session = this.getSession();
     const result = await session.run<{ exists: boolean }>(
       'CALL gds.graph.exists($graphName) YIELD exists RETURN exists',
       { graphName },
     );
-    await this.releaseSession(session, 'WRITE');
+    await this.releaseSession(session);
     return result.records[0].get('exists');
   }
 

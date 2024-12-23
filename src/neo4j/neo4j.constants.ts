@@ -7,9 +7,18 @@ export const GET_HEADERS_QUERY = (disease?: string) =>
 export const GET_DISEASES_QUERY = 'MATCH (s:Stats { version: 1 }) RETURN s.disease AS diseases';
 
 export function GET_GENES_QUERY(properties?: string[], bringMeta = true): string {
+  if (properties?.length) {
+    return `MATCH (g:Gene)
+    WHERE g.ID IN $geneIDs OR g.Gene_name IN $geneIDs
+    RETURN g { ${properties ? `${properties.map((prop) => `.\`${prop}\``).join(', ')},` : ''} ${bringMeta ? '.Gene_name, .Description, .hgnc_gene_id, Aliases' : ''} .ID } AS genes`;
+  }
   return `MATCH (g:Gene)
     WHERE g.ID IN $geneIDs OR g.Gene_name IN $geneIDs
-    RETURN g { ${properties ? `${properties.map((prop) => `.\`${prop}\``).join(', ')},` : ''} ${bringMeta ? '.Gene_name, .Description, .hgnc_gene_id,' : ''} .ID } AS genes`;
+    RETURN { Input: g.Gene_name, Gene_name: g.Gene_name, Description: g.Description, hgnc_gene_id: g.hgnc_gene_id, ID: g.ID, Aliases: g.Aliases } AS genes
+    UNION ALL
+    MATCH (a:GeneAlias)-[:ALIAS_OF]->(g:Gene)
+    WHERE a.Gene_name IN $geneIDs
+    RETURN { Input: a.Gene_name, Gene_name: g.Gene_name, Description: g.Description, hgnc_gene_id: g.hgnc_gene_id, ID: g.ID, Aliases: g.Aliases } AS genes`;
 }
 
 export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, graphExists = true): string {

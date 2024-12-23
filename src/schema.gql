@@ -8,9 +8,11 @@ input DataRequired {
 }
 
 type Gene {
+  Aliases: String
   Description: String
   Gene_name: String
   ID: String!
+  Input: String!
   common: JSON
   disease: JSON
   hgnc_gene_id: String

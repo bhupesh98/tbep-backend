@@ -7,15 +7,17 @@ import {
   GET_GENES_QUERY,
   GET_HEADERS_QUERY,
 } from '@/neo4j/neo4j.constants';
-import { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
+import type { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { createHash } from 'node:crypto';
 
 export interface GetGenesResult {
   ID: string;
+  Input: string;
   Gene_name?: string;
   Description?: string;
   hgnc_gene_id?: string;
-  [property: string]: string;
+  Aliases?: string[];
+  [property: string]: string | string[] | undefined;
 }
 
 @Injectable()
@@ -29,11 +31,17 @@ export class GraphqlService {
     const session = this.neo4jService.getSession();
     const result = await session.run<{ genes: GetGenesResult }>(GET_GENES_QUERY(properties, bringMeta), { geneIDs });
     await this.neo4jService.releaseSession(session);
-    return result.records.map((record) => record.get('genes'));
+    return result.records.map((record) => {
+      const gene = record.get('genes');
+      return {
+        ...gene,
+        Aliases: gene.Aliases?.join(', '),
+      };
+    });
   }
 
-  async filterGenes(genes: Array<GetGenesResult>, config: Array<DataRequired>) {
-    return genes.map<Gene>((gene: any) => {
+  async filterGenes(genes: ReturnType<typeof GraphqlService.prototype.getGenes>, config: Array<DataRequired>) {
+    return (await genes).map<Gene>((gene: any) => {
       gene.common = {};
       gene.disease = {};
       for (const { disease: diseaseName, properties } of config) {

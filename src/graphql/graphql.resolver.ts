@@ -38,7 +38,7 @@ export class GraphqlResolver {
     const bringMeta = info.fieldNodes[0].selectionSet.selections.some(
       (selection: FieldNode) => !['ID', 'common', 'disease'].includes(selection?.name.value),
     );
-    const genes = await this.graphqlService.getGenes(geneIDs, config, bringMeta);
+    const genes = this.graphqlService.getGenes(geneIDs, config, bringMeta);
     return config ? this.graphqlService.filterGenes(genes, config) : genes;
   }
 

@@ -27,7 +27,18 @@ export class AlgorithmService {
 
   colorGenerator() {
     let count = 0;
-    return () => this.hslToHex(count++ * 137.508, 75, 50);
+    const goldenAngle = 137.508;
+    return () => {
+      let h = (count * goldenAngle) % 360;
+      const s = 40 + (count % 4) * 20;
+      let l = 20 + (count % 5) * 15;
+      if (h > 60 && h < 180) {
+        l = l < 50 ? l + 10 : l - 10;
+        h = h < 120 ? h + 60 : h - 60;
+      }
+      count++;
+      return this.hslToHex(h, s, l);
+    };
   }
 
   async leiden(graphName: string, resolution: number, weighted: boolean) {
