@@ -4,7 +4,7 @@ export const NEO4J_DRIVER: string = 'NEO4J_DRIVER';
 export const GET_HEADERS_QUERY = (disease?: string) =>
   `MATCH (s:Stats) RETURN ${disease ? `s.${disease} AS diseaseHeader,` : ''} s.common AS commonHeader`;
 
-export const GET_DISEASES_QUERY = 'MATCH (s:Stats { version: 1 }) RETURN s.disease AS diseases';
+export const GET_DISEASES_QUERY = `MATCH (d:Disease) RETURN d { .* } AS diseases;`;
 
 export function GET_GENES_QUERY(properties?: string[], bringMeta = true): string {
   if (properties?.length) {

@@ -9,6 +9,7 @@ import {
 } from '@/neo4j/neo4j.constants';
 import type { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { createHash } from 'node:crypto';
+import { Disease } from '@/graphql/models/Disease.model';
 
 export interface GetGenesResult {
   ID: string;
@@ -112,8 +113,8 @@ export class GraphqlService {
 
   async getDiseases() {
     const session = this.neo4jService.getSession();
-    const result = await session.run<{ diseases: string[] }>(GET_DISEASES_QUERY);
+    const result = await session.run<{ diseases: Disease }>(GET_DISEASES_QUERY);
     await this.neo4jService.releaseSession(session);
-    return result.records[0].get('diseases');
+    return result.records.map((record) => record.get('diseases'));
   }
 }

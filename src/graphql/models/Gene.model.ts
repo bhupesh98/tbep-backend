@@ -1,10 +1,10 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType, ID } from '@nestjs/graphql';
 import type GraphQLJSONType from 'graphql-type-json';
 import GraphQLJSON from 'graphql-type-json';
 
 @ObjectType()
 export class Gene {
-  @Field(() => String)
+  @Field(() => ID)
   ID: string;
 
   @Field(() => String)

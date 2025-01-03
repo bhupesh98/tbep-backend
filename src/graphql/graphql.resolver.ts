@@ -6,6 +6,7 @@ import { RedisService } from '@/redis/redis.service';
 import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { FieldNode, GraphQLResolveInfo } from 'graphql';
+import { Disease } from '@/graphql/models/Disease.model';
 
 @Resolver()
 export class GraphqlResolver {
@@ -18,7 +19,7 @@ export class GraphqlResolver {
   ) {}
 
   @Query(() => String)
-  async getUserID(@Context('req') { headers }: { headers: Record<string, string> }): Promise<string> {
+  async userID(@Context('req') { headers }: { headers: Record<string, string> }): Promise<string> {
     const header = headers['x-user-id'] || crypto.randomUUID();
     await this.redisService.redisClient.set(
       `user:${header}`,
@@ -30,7 +31,7 @@ export class GraphqlResolver {
   }
 
   @Query(() => [Gene])
-  async getGenes(
+  async genes(
     @Args('geneIDs', { type: () => [String] }) geneIDs: string[],
     @Args('config', { type: () => [DataRequired], nullable: true }) config: Array<DataRequired> | undefined,
     @Info() info: GraphQLResolveInfo,
@@ -43,12 +44,12 @@ export class GraphqlResolver {
   }
 
   @Query(() => Header)
-  async getHeaders(@Args('disease', { type: () => String, nullable: true }) disease?: string) {
+  async headers(@Args('disease', { type: () => String, nullable: true }) disease?: string) {
     return this.graphqlService.getHeaders(disease);
   }
 
-  @Query(() => [String])
-  async getDiseases(): Promise<string[]> {
+  @Query(() => [Disease])
+  async diseases(): Promise<Disease[]> {
     return this.graphqlService.getDiseases();
   }
 
