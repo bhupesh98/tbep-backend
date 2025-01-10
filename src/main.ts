@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import * as process from 'node:process';
 import * as compression from 'compression';
 import { ConfigService } from '@nestjs/config';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,10 +22,11 @@ async function bootstrap() {
         callback(null, true);
       }
     },
-    credentials: false,
+    credentials: true,
     methods: 'GET, POST',
   });
   app.use(compression());
+  app.use(cookieParser());
   await app.listen(configService.get('PORT', 4000));
 }
 

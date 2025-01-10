@@ -7,6 +7,7 @@ import {
   HttpStatus,
   ParseBoolPipe,
   ParseFloatPipe,
+  ParseIntPipe,
   Post,
   Query,
   UsePipes,
@@ -24,8 +25,9 @@ export class AlgorithmController {
     @Query('graphName') graphName: string,
     @Query('resolution', new ParseFloatPipe({ optional: true })) resolution = 1,
     @Query('weighted', new ParseBoolPipe({ optional: true })) weighted = true,
+    @Query('minCommunitySize', new ParseIntPipe({ optional: true })) minCommunitySize = 1,
   ) {
-    const result = await this.algoService.leiden(graphName, resolution, weighted);
+    const result = await this.algoService.leiden(graphName, resolution, weighted, minCommunitySize);
     if (!result) throw new HttpException('Graph not found', HttpStatus.NOT_FOUND);
     return result;
   }

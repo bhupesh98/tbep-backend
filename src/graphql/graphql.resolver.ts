@@ -7,6 +7,7 @@ import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { FieldNode, GraphQLResolveInfo } from 'graphql';
 import { Disease } from '@/graphql/models/Disease.model';
+import { Request } from 'express';
 
 @Resolver()
 export class GraphqlResolver {
@@ -17,18 +18,6 @@ export class GraphqlResolver {
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {}
-
-  @Query(() => String)
-  async userID(@Context('req') { headers }: { headers: Record<string, string> }): Promise<string> {
-    const header = headers['x-user-id'] || crypto.randomUUID();
-    await this.redisService.redisClient.set(
-      `user:${header}`,
-      '',
-      'EX',
-      this.configService.get('REDIS_USER_EXPIRY', 7200),
-    );
-    return header;
-  }
 
   @Query(() => [Gene])
   async genes(
@@ -57,14 +46,29 @@ export class GraphqlResolver {
   async getGeneInteractions(
     @Args('input', { type: () => InteractionInput }) input: InteractionInput,
     @Args('order', { type: () => Int }) order: number,
-    @Context('req') { headers }: { headers: Record<string, string> },
+    @Context('req') req: Request,
   ): Promise<GeneInteractionOutput> {
-    const header = headers['x-user-id'];
-    if (!isUUID(header)) throw new HttpException('Correct user ID not found', HttpStatus.UNAUTHORIZED);
+    const userID = req.cookies['user-id'] ?? crypto.randomUUID();
+    if (!isUUID(userID)) throw new HttpException('Correct user ID not found', HttpStatus.UNAUTHORIZED);
+    if (!req.cookies['user-id']) {
+      await this.redisService.redisClient.set(
+        `user:${userID}`,
+        '',
+        'EX',
+        this.configService.get('REDIS_USER_EXPIRY', 7200),
+      );
+
+      req.res?.cookie('user-id', userID, {
+        maxAge: this.configService.get('REDIS_USER_EXPIRY', 7200) * 1000,
+        httpOnly: true,
+        secure: this.configService.get('NODE_ENV') === 'production',
+      });
+    }
+
     const graphName =
       input.graphName ??
       this.graphqlService.computeHash(JSON.stringify({ ...input, geneIDs: input.geneIDs.sort(), order }));
-    const result = await this.graphqlService.getGeneInteractions(input, order, graphName, header);
+    const result = await this.graphqlService.getGeneInteractions(input, order, graphName, userID);
     this.logger.log(`Genes: ${result.genes.length}, Links: ${result.links.length}`);
     return {
       genes: result.genes,

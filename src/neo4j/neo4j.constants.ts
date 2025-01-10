@@ -51,8 +51,8 @@ export function FIRST_ORDER_GENES_QUERY(interactionType: string): string {
 }
 
 export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName)';
-export function LEIDEN_QUERY(weighted = true): string {
-  return `CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, logProgress: false }) YIELD nodeId, communityId RETURN gds.util.asNode(nodeId).ID AS ID, communityId AS community`;
+export function LEIDEN_QUERY(minCommunitySize: number, weighted = true): string {
+  return `CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, minCommunitySize: ${minCommunitySize}, logProgress: false }) YIELD nodeId, communityId RETURN gds.util.asNode(nodeId).ID AS ID, communityId AS community`;
 }
 
 export function RENEW_QUERY(order: number, interactionType: string) {

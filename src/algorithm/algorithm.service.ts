@@ -41,10 +41,10 @@ export class AlgorithmService {
     };
   }
 
-  async leiden(graphName: string, resolution: number, weighted: boolean) {
+  async leiden(graphName: string, resolution: number, weighted: boolean, minCommunitySize: number) {
     if (!(await this.neo4jService.graphExists(graphName))) return;
     const session = this.neo4jService.getSession();
-    const response = (await session.run(LEIDEN_QUERY(weighted), { graphName, resolution })).records;
+    const response = (await session.run(LEIDEN_QUERY(minCommunitySize, weighted), { graphName, resolution })).records;
     await this.neo4jService.releaseSession(session);
     let count = 0;
     const colorGen = this.colorGenerator();

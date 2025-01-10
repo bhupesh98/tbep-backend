@@ -63,5 +63,4 @@ type Query {
   genes(config: [DataRequired!], geneIDs: [String!]!): [Gene!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
   headers(disease: String): Header!
-  userID: String!
 }
