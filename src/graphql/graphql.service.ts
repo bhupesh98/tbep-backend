@@ -7,7 +7,7 @@ import {
   GET_GENES_QUERY,
   GET_HEADERS_QUERY,
 } from '@/neo4j/neo4j.constants';
-import type { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
+import type { DataRequired, Description, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { createHash } from 'node:crypto';
 import { Disease } from '@/graphql/models/Disease.model';
 
@@ -101,13 +101,16 @@ export class GraphqlService {
     return createHash('sha256').update(query).digest('hex');
   }
 
-  async getHeaders(disease?: string): Promise<Header> {
+  async getHeaders(disease: string, bringCommon: boolean): Promise<Header> {
     const session = this.neo4jService.getSession();
-    const result = await session.run<Record<'diseaseHeader' | 'commonHeader', string[]>>(GET_HEADERS_QUERY(disease));
+    const result = await session.run<Record<'diseaseHeader' | 'commonHeader', Description[]>>(
+      GET_HEADERS_QUERY(bringCommon),
+      { disease },
+    );
     await this.neo4jService.releaseSession(session);
     return {
-      disease: result.records[0].get('diseaseHeader'),
-      common: result.records[0].get('commonHeader'),
+      disease: result.records?.[0].get('diseaseHeader') || [],
+      common: bringCommon ? result.records?.[0].get('commonHeader') : [],
     };
   }
 

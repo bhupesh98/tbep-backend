@@ -1,10 +1,19 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class Header {
-  @Field(() => [String], { nullable: true })
-  disease?: string[];
+export class Description {
+  @Field(() => String)
+  name: string;
 
-  @Field(() => [String], { nullable: true })
-  common?: string[];
+  @Field(() => String, { nullable: true })
+  description: string;
+}
+
+@ObjectType()
+export class Header {
+  @Field(() => [Description], { nullable: true })
+  disease?: Description[];
+
+  @Field(() => [Description], { nullable: true })
+  common?: Description[];
 }

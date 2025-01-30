@@ -1,8 +1,10 @@
 export const NEO4J_CONFIG: string = 'NEO4J_CONFIG';
 export const NEO4J_DRIVER: string = 'NEO4J_DRIVER';
 
-export const GET_HEADERS_QUERY = (disease?: string) =>
-  `MATCH (s:Stats) RETURN ${disease ? `s.${disease} AS diseaseHeader,` : ''} s.common AS commonHeader`;
+export const GET_HEADERS_QUERY = (bringCommon = true) =>
+  `${bringCommon ? 'MATCH (cp:Common&Property) WITH COLLECT(cp { .* }) AS commonHeader' : ''}
+  MATCH (:Disease { ID: $disease })-[:HAS_PROPERTY]-(dp:Property)
+  RETURN COLLECT( dp { .* }) AS diseaseHeader ${bringCommon ? ', commonHeader' : ''}`;
 
 export const GET_DISEASES_QUERY = `MATCH (d:Disease) RETURN d { .* } AS diseases;`;
 
@@ -50,7 +52,7 @@ export function FIRST_ORDER_GENES_QUERY(interactionType: string): string {
     RETURN apoc.coll.toSet(COLLECT(g1.ID) + COLLECT(g2.ID)) AS geneIDs`;
 }
 
-export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName)';
+export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName, failIfMissing: false)';
 export function LEIDEN_QUERY(minCommunitySize: number, weighted = true): string {
   return `CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, minCommunitySize: ${minCommunitySize}, logProgress: false }) YIELD nodeId, communityId RETURN gds.util.asNode(nodeId).ID AS ID, communityId AS community`;
 }
