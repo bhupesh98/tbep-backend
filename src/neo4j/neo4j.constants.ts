@@ -52,7 +52,7 @@ export function FIRST_ORDER_GENES_QUERY(interactionType: string): string {
     RETURN apoc.coll.toSet(COLLECT(g1.ID) + COLLECT(g2.ID)) AS geneIDs`;
 }
 
-export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName, failIfMissing: false)';
+export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName)';
 export function LEIDEN_QUERY(minCommunitySize: number, weighted = true): string {
   return `CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, minCommunitySize: ${minCommunitySize}, logProgress: false }) YIELD nodeId, communityId RETURN gds.util.asNode(nodeId).ID AS ID, communityId AS community`;
 }

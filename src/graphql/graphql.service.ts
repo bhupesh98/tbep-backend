@@ -32,13 +32,30 @@ export class GraphqlService {
     const session = this.neo4jService.getSession();
     const result = await session.run<{ genes: GetGenesResult }>(GET_GENES_QUERY(properties, bringMeta), { geneIDs });
     await this.neo4jService.releaseSession(session);
-    return result.records.map((record) => {
-      const gene = record.get('genes');
-      return {
-        ...gene,
-        Aliases: gene.Aliases?.join(', '),
-      };
-    });
+    if (properties?.length) {
+      return result.records.map((record) => {
+        const gene = record.get('genes');
+        return {
+          ...gene,
+          Aliases: gene.Aliases?.join(', '),
+        };
+      });
+    } else {
+      const inputSet = new Set<string>();
+      return result.records.reduce<Gene[]>((acc, record) => {
+        const gene = record.get('genes');
+        if (inputSet.has(gene.Input)) {
+          return acc;
+        } else {
+          inputSet.add(gene.Input);
+          acc.push({
+            ...gene,
+            Aliases: gene.Aliases?.join(', '),
+          });
+          return acc;
+        }
+      }, []);
+    }
   }
 
   async filterGenes(genes: ReturnType<typeof GraphqlService.prototype.getGenes>, config: Array<DataRequired>) {
