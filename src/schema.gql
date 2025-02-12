@@ -7,6 +7,11 @@ input DataRequired {
   properties: [String!]!
 }
 
+type Description {
+  description: String
+  name: String!
+}
+
 type Disease {
   ID: ID!
   name: String
@@ -42,8 +47,8 @@ type GeneInteractionOutput {
 }
 
 type Header {
-  common: [String!]
-  disease: [String!]
+  common: [Description!]
+  disease: [Description!]
 }
 
 input InteractionInput {
@@ -62,5 +67,5 @@ type Query {
   diseases: [Disease!]!
   genes(config: [DataRequired!], geneIDs: [String!]!): [Gene!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
-  headers(disease: String): Header!
+  headers(disease: String!): Header!
 }
