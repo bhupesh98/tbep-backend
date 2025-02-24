@@ -12,7 +12,7 @@ export function GET_GENES_QUERY(properties?: string[], bringMeta = true): string
   if (properties?.length) {
     return `MATCH (g:Gene)
     WHERE g.ID IN $geneIDs OR g.Gene_name IN $geneIDs
-    RETURN g { ${properties ? `${properties.map((prop) => `.\`${prop}\``).join(', ')},` : ''} ${bringMeta ? '.Gene_name, .Description, .hgnc_gene_id, Aliases' : ''} .ID } AS genes`;
+    RETURN g { ${properties ? `${properties.map((prop) => `.\`${prop}\``).join(', ')},` : ''} ${bringMeta ? '.Gene_name, .Description, .hgnc_gene_id, .Aliases,' : ''} .ID } AS genes`;
   }
   return `MATCH (g:Gene)
     WHERE g.ID IN $geneIDs OR g.Gene_name IN $geneIDs
@@ -54,7 +54,8 @@ export function FIRST_ORDER_GENES_QUERY(interactionType: string): string {
 
 export const GRAPH_DROP_QUERY = 'CALL gds.graph.drop($graphName)';
 export function LEIDEN_QUERY(minCommunitySize: number, weighted = true): string {
-  return `CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, minCommunitySize: ${minCommunitySize}, logProgress: false }) YIELD nodeId, communityId RETURN gds.util.asNode(nodeId).ID AS ID, communityId AS community`;
+  return `CALL gds.leiden.stats($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, logProgress: false }) YIELD modularity WITH modularity
+  CALL gds.leiden.stream($graphName, { ${weighted ? 'relationshipWeightProperty: "score",' : ''} gamma: $resolution, minCommunitySize: ${minCommunitySize}, logProgress: false }) YIELD nodeId, communityId RETURN COLLECT({ID: gds.util.asNode(nodeId).ID, communityId: communityId }) AS community, modularity`;
 }
 
 export function RENEW_QUERY(order: number, interactionType: string) {

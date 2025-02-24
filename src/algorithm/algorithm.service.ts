@@ -44,24 +44,25 @@ export class AlgorithmService {
   async leiden(graphName: string, resolution: number, weighted: boolean, minCommunitySize: number) {
     if (!(await this.neo4jService.graphExists(graphName))) return;
     const session = this.neo4jService.getSession();
-    const response = (await session.run(LEIDEN_QUERY(minCommunitySize, weighted), { graphName, resolution })).records;
+    const response = (
+      await session.run<{
+        community: { ID: string; communityId: number }[];
+        modularity: number;
+      }>(LEIDEN_QUERY(minCommunitySize, weighted), { graphName, resolution })
+    ).records[0];
     await this.neo4jService.releaseSession(session);
-    let count = 0;
     const colorGen = this.colorGenerator();
-    return response.reduce(
-      (acc, record) => {
-        const community = record.get('community');
-        if (!acc[community])
-          acc[community] = {
-            name: `Community ${++count}`,
-            genes: [],
-            color: colorGen(),
-          };
-        acc[community].genes.push(record.get('ID'));
+    let count = 0;
+    return {
+      modularity: response.get('modularity').toFixed(3),
+      communities: response.get('community').reduce((acc, { ID, communityId }) => {
+        if (!acc[communityId]) {
+          acc[communityId] = { name: `Community ${++count}`, color: colorGen(), genes: [] };
+        }
+        acc[communityId].genes.push(ID);
         return acc;
-      },
-      {} as Record<string, { name: string; genes: string[]; color: string }>,
-    );
+      }, {}),
+    };
   }
 
   async renewSession(graphConfig: GraphConfigDto) {
