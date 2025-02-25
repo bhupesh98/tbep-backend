@@ -41,6 +41,7 @@ type GeneInteraction {
 }
 
 type GeneInteractionOutput {
+  averageClusteringCoefficient: Float
   genes: [GeneBase!]!
   graphName: String
   links: [GeneInteraction!]

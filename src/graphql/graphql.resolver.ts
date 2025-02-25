@@ -74,6 +74,7 @@ export class GraphqlResolver {
       genes: result.genes,
       links: result.links,
       graphName,
+      averageClusteringCoefficient: result.averageClusteringCoefficient,
     };
   }
 }

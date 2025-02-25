@@ -11,4 +11,7 @@ export class GeneInteractionOutput {
 
   @Field(() => String, { nullable: true })
   graphName?: string;
+
+  @Field(() => Number, { nullable: true })
+  averageClusteringCoefficient?: number;
 }

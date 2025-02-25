@@ -31,7 +31,8 @@ export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, 
         WHERE r.score >= $minScore AND elementId(g1) < elementId(g2) AND g2.ID IN $geneIDs
         WITH [conn IN COLLECT({gene1: g1.ID, gene2: g2.ID, score: r.score}) WHERE conn.gene2 IS NOT NULL] AS links, apoc.coll.toSet(COLLECT(g1 { .ID, .Gene_name, .Description})) AS genes
         ${graphExists ? '' : ",gds.graph.project($graphName,g1,g2,{ relationshipProperties: r { .score }, relationshipType: type(r) }, { undirectedRelationshipTypes: ['*'] }) AS graph"}
-        RETURN genes, links
+        CALL gds.localClusteringCoefficient.stats($graphName) YIELD averageClusteringCoefficient
+        RETURN genes, links, averageClusteringCoefficient
         `;
     case 1:
       return `MATCH (g1:Gene)-[r:${interactionType}]->(g2:Gene)
@@ -39,7 +40,8 @@ export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, 
         AND r.score >= $minScore
         WITH apoc.coll.toSet(COLLECT(g1 { .ID, .Gene_name, .Description}) + COLLECT(g2 { .ID, .Gene_name, .Description})) AS genes, COLLECT({gene1: g1.ID, gene2: g2.ID, score: r.score}) AS links
         ${graphExists ? '' : ",gds.graph.project($graphName,g1,g2,{ relationshipProperties: r { .score }, relationshipType: type(r) }, { undirectedRelationshipTypes: ['*'] }) AS graph"}
-        RETURN genes, links
+        CALL gds.localClusteringCoefficient.stats($graphName) YIELD averageClusteringCoefficient
+        RETURN genes, links, averageClusteringCoefficient
         `;
     default:
       return '';

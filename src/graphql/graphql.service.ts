@@ -111,6 +111,7 @@ export class GraphqlService {
     return {
       genes: result.records[0]?.get('genes') ?? [],
       links: result.records[0]?.get('links') ?? [],
+      averageClusteringCoefficient: result.records[0]?.get('averageClusteringCoefficient') ?? 0,
     };
   }
 
