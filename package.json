@@ -7,7 +7,7 @@
     "email": "bhupeshdewangan20@gmail.com",
     "url": "https://github.com/bhupesh98"
   },
-  "license": "MIT",
+  "license": "CC-BY-NC-4.0",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
