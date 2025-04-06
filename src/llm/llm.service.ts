@@ -1,17 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { Model, PromptDto } from './prompt.dto';
 
 @Injectable()
 export class LlmService {
-  #openai: OpenAI;
+  #models: Record<Model, OpenAI> = {
+    'gpt-4o': null,
+    'meta/llama-3.1-405b-instruct': null,
+  };
 
   constructor(configService: ConfigService) {
-    this.#openai = new OpenAI({
-      // TODO: Change Base URL
-      baseURL: 'https://integrate.api.nvidia.com/v1',
-      apiKey: configService.get('OPENAI_API_KEY'),
-    });
+    if (configService.get('OPENAI_API_KEY')) {
+      this.#models[Model.GPT_4O] = new OpenAI({
+        baseURL: 'https://api.openai.com/v1',
+        apiKey: configService.get('OPENAI_API_KEY'),
+      });
+    }
+    if (configService.get('NVIDIA_API_KEY')) {
+      this.#models[Model.LLAMA_3] = new OpenAI({
+        baseURL: 'https://integrate.api.nvidia.com/v1',
+        apiKey: configService.get('NVIDIA_API_KEY'),
+      });
+    }
+  }
+
+  isModelAvailable(model: Model): boolean {
+    return !!this.#models[model];
   }
 
   #SYSTEM_PROMPT = `Answer the following biomedical question in a very specific manner:
@@ -44,12 +59,18 @@ Journal
 
 Please strictly follow these guidelines in your responses.`;
 
-  async generateResponseStream(prompt: string) {
-    return this.#openai.chat.completions.create({
-      model: 'meta/llama-3.1-405b-instruct',
+  async generateResponseStream(promptDto: PromptDto) {
+    const model = promptDto.model || Model.LLAMA_3;
+
+    if (!this.isModelAvailable(model)) {
+      throw new Error(`Model ${model} is not available. Please configure the appropriate API key.`);
+    }
+
+    return this.#models[model].chat.completions.create({
+      model: model,
       messages: [
         { role: 'system', content: this.#SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
+        { role: 'user', content: promptDto.question },
       ],
       temperature: 0,
       top_p: 0.7,

@@ -1,18 +1,35 @@
-import { Body, Controller, Post, Sse, Query, MessageEvent } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Sse,
+  Query,
+  MessageEvent,
+  HttpException,
+  HttpStatus,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { LlmService } from './llm.service';
-import { PromptDto } from './prompt.dto';
+import { Model, PromptDto } from './prompt.dto';
 import { Observable } from 'rxjs';
 
 @Controller('llm')
 export class LlmController {
-  #promptStore = new Map<string, string>();
+  #promptStore = new Map<string, PromptDto>();
 
   constructor(private readonly llmService: LlmService) {}
 
   @Post('chat')
+  @UsePipes(new ValidationPipe({ transform: true }))
   async initChatStream(@Body() promptDto: PromptDto) {
+    // Check if the model is available before storing the prompt
+    const model = promptDto.model || Model.LLAMA_3;
+    if (model && !this.llmService.isModelAvailable(model)) {
+      throw new HttpException(`Model ${model} is currently not configured for use.`, HttpStatus.BAD_REQUEST);
+    }
     const streamID = Date.now().toString();
-    this.#promptStore.set(streamID, promptDto.question);
+    this.#promptStore.set(streamID, promptDto);
     return { streamID };
   }
 
@@ -21,13 +38,13 @@ export class LlmController {
     return new Observable<MessageEvent>((subscriber) => {
       (async () => {
         try {
-          const prompt = this.#promptStore.get(streamID);
-          if (!prompt) {
+          const promptDto = this.#promptStore.get(streamID);
+          if (!promptDto) {
             subscriber.error('Invalid stream ID');
             return;
           }
           this.#promptStore.delete(streamID);
-          const stream = await this.llmService.generateResponseStream(prompt);
+          const stream = await this.llmService.generateResponseStream(promptDto);
           for await (const chunk of stream) {
             const content = chunk.choices[0].delta.content;
             if (content) {
@@ -36,7 +53,8 @@ export class LlmController {
           }
           subscriber.complete();
         } catch (error) {
-          subscriber.error(error);
+          subscriber.next({ data: `Error: ${error.message}` });
+          subscriber.complete();
         }
       })();
     });
