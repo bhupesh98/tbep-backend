@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import OpenAI from 'openai';
 import { Model, PromptDto } from './prompt.dto';
 
 @Injectable()
@@ -70,12 +70,14 @@ Please strictly follow these guidelines in your responses.`;
       model: model,
       messages: [
         { role: 'system', content: this.#SYSTEM_PROMPT },
+        ...(promptDto.prevMessages ?? []),
         { role: 'user', content: promptDto.question },
       ],
       temperature: 0,
       top_p: 0.7,
       max_tokens: 1024,
       stream: true,
+      n: 1,
     });
   }
 }

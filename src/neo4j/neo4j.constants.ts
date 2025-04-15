@@ -28,7 +28,7 @@ export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, 
     case 0:
       return `MATCH (g1:Gene) WHERE g1.ID IN $geneIDs
         OPTIONAL MATCH (g1:Gene)-[r:${interactionType}]->(g2:Gene)
-        WHERE r.score >= $minScore AND elementId(g1) < elementId(g2) AND g2.ID IN $geneIDs
+        WHERE r.score >= $minScore AND g2.ID IN $geneIDs
         WITH [conn IN COLLECT({gene1: g1.ID, gene2: g2.ID, score: r.score}) WHERE conn.gene2 IS NOT NULL] AS links, apoc.coll.toSet(COLLECT(g1 { .ID, .Gene_name, .Description})) AS genes
         ${graphExists ? '' : ",gds.graph.project($graphName,g1,g2,{ relationshipProperties: r { .score }, relationshipType: type(r) }, { undirectedRelationshipTypes: ['*'] }) AS graph"}
         CALL gds.localClusteringCoefficient.stats($graphName) YIELD averageClusteringCoefficient
