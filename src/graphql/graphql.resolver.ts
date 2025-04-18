@@ -6,7 +6,7 @@ import { RedisService } from '@/redis/redis.service';
 import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { FieldNode, GraphQLResolveInfo } from 'graphql';
-import { Disease } from '@/graphql/models/Disease.model';
+import { Disease } from '@/graphql/models';
 import { Request } from 'express';
 
 @Resolver()

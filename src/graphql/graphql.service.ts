@@ -9,7 +9,7 @@ import {
 } from '@/neo4j/neo4j.constants';
 import type { DataRequired, Description, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { createHash } from 'node:crypto';
-import { Disease } from '@/graphql/models/Disease.model';
+import { Disease } from '@/graphql/models';
 
 export interface GetGenesResult {
   ID: string;

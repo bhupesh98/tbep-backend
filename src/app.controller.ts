@@ -1,6 +1,6 @@
 import { Controller, Get, Header } from '@nestjs/common';
 import { Neo4jService } from '@/neo4j/neo4j.service';
-import { Disease } from '@/graphql/models/Disease.model';
+import { Disease } from '@/graphql/models';
 import { GET_DISEASES_QUERY } from '@/neo4j/neo4j.constants';
 
 @Controller()
