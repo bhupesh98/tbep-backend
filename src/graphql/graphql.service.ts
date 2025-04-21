@@ -127,8 +127,8 @@ export class GraphqlService {
     );
     await this.neo4jService.releaseSession(session);
     return {
-      disease: result.records?.[0].get('diseaseHeader') || [],
-      common: bringCommon ? result.records?.[0].get('commonHeader') : [],
+      disease: result.records[0].get('diseaseHeader'),
+      common: bringCommon ? result.records[0].get('commonHeader') : [],
     };
   }
 

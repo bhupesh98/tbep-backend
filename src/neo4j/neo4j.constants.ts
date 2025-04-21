@@ -3,7 +3,7 @@ export const NEO4J_DRIVER: string = 'NEO4J_DRIVER';
 
 export const GET_HEADERS_QUERY = (bringCommon = true) =>
   `${bringCommon ? 'MATCH (cp:Common&Property) WITH COLLECT(cp { .* }) AS commonHeader' : ''}
-  MATCH (:Disease { ID: $disease })-[:HAS_PROPERTY]-(dp:Property)
+  OPTIONAL MATCH (:Disease { ID: $disease })-[:HAS_PROPERTY]-(dp:Property)
   RETURN COLLECT( dp { .* }) AS diseaseHeader ${bringCommon ? ', commonHeader' : ''}`;
 
 export const GET_DISEASES_QUERY = `MATCH (d:Disease) RETURN d { .* } AS diseases;`;
