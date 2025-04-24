@@ -1,4 +1,4 @@
-FROM node:22.1-alpine AS base
+FROM node:22.15-alpine AS base
 WORKDIR /app
 COPY ./package.json /app/
 
@@ -13,4 +13,7 @@ RUN npm run build
 FROM base
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
+
+LABEL org.opencontainers.image.source="https://github.com/mizzoudbl/tbep"
+
 CMD [ "npm", "run", "start:prod" ]

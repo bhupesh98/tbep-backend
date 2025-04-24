@@ -24,7 +24,7 @@
 
 ## Description
 
-Backend for the [TBEP](https://github.com/bhupesh98/tbep) project. This project is built using the [NestJS](https://nestjs.com) framework. It is recommended to you docker to manage its following dependencies:
+Backend for the [TBEP](https://github.com/mizzoudbl/tbep) project. This project is built using the [NestJS](https://nestjs.com) framework. It is recommended to you docker to manage its following dependencies:
 
 - Neo4j
 - Redis
