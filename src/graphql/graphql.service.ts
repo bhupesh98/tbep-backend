@@ -42,19 +42,29 @@ export class GraphqlService {
       });
     } else {
       const inputSet = new Set<string>();
-      return result.records.reduce<Gene[]>((acc, record) => {
-        const gene = record.get('genes');
-        if (inputSet.has(gene.Input)) {
-          return acc;
-        } else {
-          inputSet.add(gene.Input);
-          acc.push({
-            ...gene,
-            Aliases: gene.Aliases?.join(', '),
-          });
-          return acc;
-        }
-      }, []);
+      const geneIDsIndexMap = new Map<string, number>();
+      geneIDs.forEach((id, index) => {
+        geneIDsIndexMap.set(id, index);
+      });
+      return result.records
+        .reduce<Gene[]>((acc, record) => {
+          const gene = record.get('genes');
+          if (inputSet.has(gene.Input)) {
+            return acc;
+          } else {
+            inputSet.add(gene.Input);
+            acc.push({
+              ...gene,
+              Aliases: gene.Aliases?.join(', '),
+            });
+            return acc;
+          }
+        }, [])
+        .sort(
+          (a, b) =>
+            (geneIDsIndexMap.get(a.Input) ?? geneIDsIndexMap.get(a.ID)) -
+            (geneIDsIndexMap.get(b.Input) ?? geneIDsIndexMap.get(b.ID)),
+        );
     }
   }
 

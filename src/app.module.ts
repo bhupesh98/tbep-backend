@@ -8,6 +8,7 @@ import { LlmModule } from './llm/llm.module';
 import { AlgorithmModule } from './algorithm/algorithm.module';
 import { RedisModule } from './redis/redis.module';
 import { RedisService } from '@/redis/redis.service';
+import { ClickhouseModule } from './clickhouse/clickhouse.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { RedisService } from '@/redis/redis.service';
       global: true,
       exports: [RedisService],
     },
+    ClickhouseModule,
   ],
   controllers: [AppController],
 })
