@@ -35,7 +35,7 @@ export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, 
         RETURN genes, links, averageClusteringCoefficient
         `;
     case 1:
-      return `MATCH (g1:Gene)-[r:${interactionType}]->(g2:Gene)
+      return `MATCH (g1:Gene)-[r:${interactionType}]-(g2:Gene)
         WHERE g1.ID IN $geneIDs
         AND r.score >= $minScore
         WITH apoc.coll.toSet(COLLECT(g1 { .ID, .Gene_name, .Description}) + COLLECT(g2 { .ID, .Gene_name, .Description})) AS genes, COLLECT({gene1: g1.ID, gene2: g2.ID, score: r.score}) AS links
@@ -49,7 +49,7 @@ export function GENE_INTERACTIONS_QUERY(order: number, interactionType: string, 
 }
 
 export function FIRST_ORDER_GENES_QUERY(interactionType: string): string {
-  return `MATCH (g1:Gene)-[r:${interactionType}]->(g2:Gene)
+  return `MATCH (g1:Gene)-[r:${interactionType}]-(g2:Gene)
     WHERE g1.ID IN $geneIDs AND r.score >= $minScore
     RETURN apoc.coll.toSet(COLLECT(g1.ID) + COLLECT(g2.ID)) AS geneIDs`;
 }
@@ -70,7 +70,7 @@ export function RENEW_QUERY(order: number, interactionType: string) {
         FINISH
         `;
     case 1:
-      return `MATCH (g1:Gene)-[r:${interactionType}]->(g2:Gene)
+      return `MATCH (g1:Gene)-[r:${interactionType}]-(g2:Gene)
         WHERE g1.ID IN $geneIDs
         AND r.score >= $minScore
         WITH gds.graph.project($graphName,g1,g2,{ relationshipProperties: r { .score }, relationshipType: type(r) }, { undirectedRelationshipTypes: ['*'] }) AS graph
