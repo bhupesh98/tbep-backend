@@ -12,11 +12,6 @@ type Description {
   name: String!
 }
 
-type Disease {
-  ID: ID!
-  name: String
-}
-
 type Gene {
   Aliases: String
   Description: String
@@ -38,6 +33,7 @@ type GeneInteraction {
   gene1: String!
   gene2: String!
   score: Float!
+  typeScores: JSON
 }
 
 type GeneInteractionOutput {
@@ -55,7 +51,7 @@ type Header {
 input InteractionInput {
   geneIDs: [String!]!
   graphName: String
-  interactionType: String!
+  interactionType: [String!]!
   minScore: Float!
 }
 
@@ -65,8 +61,12 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 scalar JSON
 
 type Query {
-  diseases: [Disease!]!
   genes(config: [DataRequired!], geneIDs: [String!]!): [Gene!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
   headers(disease: String!): Header!
+  topGenesByDisease(diseaseId: String!, limit: Int = 25): [TopGene!]!
+}
+
+type TopGene {
+  gene_name: String!
 }

@@ -11,3 +11,9 @@ export class GeneBase {
   @Field(() => String, { nullable: true })
   Gene_name?: string;
 }
+
+@ObjectType()
+export class TopGene {
+  @Field()
+  gene_name: string;
+}

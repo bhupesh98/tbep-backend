@@ -5,6 +5,8 @@ import { ApolloDriver } from '@nestjs/apollo';
 import { join } from 'node:path';
 import { GraphqlService } from './graphql.service';
 import GraphQLJSON from 'graphql-type-json';
+import { ClickhouseModule } from '@/clickhouse/clickhouse.module';
+import { ClickhouseResolver } from './clickhouse.resolver';
 
 @Module({
   imports: [
@@ -15,7 +17,8 @@ import GraphQLJSON from 'graphql-type-json';
       resolvers: { JSON: GraphQLJSON },
       path: '/graphql',
     }),
+    ClickhouseModule,
   ],
-  providers: [GraphqlResolver, GraphqlService],
+  providers: [GraphqlResolver, ClickhouseResolver, GraphqlService],
 })
 export class GraphqlModule {}

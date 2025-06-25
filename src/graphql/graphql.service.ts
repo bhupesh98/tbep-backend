@@ -3,13 +3,13 @@ import { Neo4jService } from '@/neo4j/neo4j.service';
 import {
   FIRST_ORDER_GENES_QUERY,
   GENE_INTERACTIONS_QUERY,
-  GET_DISEASES_QUERY,
   GET_GENES_QUERY,
   GET_HEADERS_QUERY,
 } from '@/neo4j/neo4j.constants';
 import type { DataRequired, Description, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { createHash } from 'node:crypto';
-import { Disease } from '@/graphql/models';
+import { mergeEdgesAndAverageScore } from '@/utils';
+import { GeneInteractionQueryOutput } from '@/interfaces';
 
 export interface GetGenesResult {
   ID: string;
@@ -108,7 +108,7 @@ export class GraphqlService {
         })
       ).records[0].get('geneIDs');
     }
-    const result = await session.run<GeneInteractionOutput>(
+    const result = await session.run<GeneInteractionQueryOutput>(
       GENE_INTERACTIONS_QUERY(order, input.interactionType, graphExists),
       {
         geneIDs: input.geneIDs,
@@ -120,7 +120,7 @@ export class GraphqlService {
     await this.neo4jService.releaseSession(session);
     return {
       genes: result.records[0]?.get('genes') ?? [],
-      links: result.records[0]?.get('links') ?? [],
+      links: mergeEdgesAndAverageScore(result.records[0]?.get('links') ?? []),
       averageClusteringCoefficient: result.records[0]?.get('averageClusteringCoefficient') ?? 0,
     };
   }
@@ -140,12 +140,5 @@ export class GraphqlService {
       disease: result.records[0].get('diseaseHeader'),
       common: bringCommon ? result.records[0].get('commonHeader') : [],
     };
-  }
-
-  async getDiseases() {
-    const session = this.neo4jService.getSession();
-    const result = await session.run<{ diseases: Disease }>(GET_DISEASES_QUERY);
-    await this.neo4jService.releaseSession(session);
-    return result.records.map((record) => record.get('diseases'));
   }
 }

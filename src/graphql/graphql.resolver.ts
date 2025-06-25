@@ -6,7 +6,6 @@ import { RedisService } from '@/redis/redis.service';
 import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { FieldNode, GraphQLResolveInfo } from 'graphql';
-import { Disease } from '@/graphql/models';
 import { Request } from 'express';
 
 @Resolver()
@@ -35,11 +34,6 @@ export class GraphqlResolver {
     const bringCommon =
       info.fieldNodes[0].selectionSet.selections.find((val: FieldNode) => val.name.value === 'common') !== undefined;
     return this.graphqlService.getHeaders(disease, bringCommon);
-  }
-
-  @Query(() => [Disease])
-  async diseases(): Promise<Disease[]> {
-    return this.graphqlService.getDiseases();
   }
 
   @Query(() => GeneInteractionOutput)

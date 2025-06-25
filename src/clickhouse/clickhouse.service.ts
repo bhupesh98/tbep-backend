@@ -3,6 +3,7 @@ import { ClickHouseClient, createClient } from '@clickhouse/client';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config/dist/config.service';
+import { TopGene } from '@/graphql/models';
 
 @Injectable()
 export class ClickhouseService implements OnApplicationBootstrap {
@@ -17,7 +18,7 @@ export class ClickhouseService implements OnApplicationBootstrap {
     });
   }
 
-  async getTopGenesByDisease(diseaseId: string, limit: number): Promise<string[]> {
+  async getTopGenesByDisease(diseaseId: string, limit: number): Promise<TopGene[]> {
     const query = `
       SELECT gene_name
       FROM overall_association_score
@@ -32,17 +33,15 @@ export class ClickhouseService implements OnApplicationBootstrap {
         format: 'JSONEachRow',
       });
 
-      const geneIds: string[] = [];
+      const genes: TopGene[] = [];
 
-      for await (const rows of resultSet.stream<{
-        gene_name: string;
-      }>()) {
+      for await (const rows of resultSet.stream<TopGene>()) {
         for (const row of rows) {
-          geneIds.push(row.json().gene_name);
+          genes.push(row.json());
         }
       }
 
-      return geneIds;
+      return genes;
     } catch (error) {
       this.logger.error('query failed', error);
       throw error;

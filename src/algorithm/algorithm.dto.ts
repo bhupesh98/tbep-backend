@@ -19,9 +19,10 @@ export class GraphConfigDto {
   @Max(2)
   order: number;
 
-  @IsString()
-  @IsNotEmpty()
-  interactionType: string;
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  interactionType: string[];
 
   @IsNumber()
   @Min(0)
