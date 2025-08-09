@@ -60,11 +60,67 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON
 
+"""Available ordering options for target disease association table"""
+enum OrderByEnum {
+  CANCER_BIOMARKERS
+  CANCER_GENE_CENSUS
+  CHEMBL
+  CLINGEN
+  CLINVAR
+  CLINVAR_SOMATIC
+  CRISPR_SCREENS
+  EUROPE_PMC
+  EXPRESSION_ATLAS
+  GEL_PANEL_APP
+  GENE2PHENOTYPE
+  GENE_BURDEN
+  GENE_SIGNATURES
+  GWAS_ASSOCIATIONS
+  IMPC
+  INTOGEN
+  ORPHANET
+  PROGENY
+  PROJECT_SCORE
+  REACTOME
+  SCORE
+  SLAPENRICH
+  UNIPROT_CURATED_VARIANTS
+  UNIPROT_LITERATURE
+}
+
+input Pagination {
+  limit: Int = 25
+  page: Int = 0
+}
+
 type Query {
   genes(config: [DataRequired!], geneIDs: [String!]!): [Gene!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
   headers(disease: String!): Header!
-  topGenesByDisease(diseaseId: String!, limit: Int = 25): [TopGene!]!
+  targetDiseaseAssociationTable(diseaseId: String!, geneIds: [String!]!, orderBy: OrderByEnum = SCORE, page: Pagination): TargetDiseaseAssociationTable!
+  topGenesByDisease(diseaseId: String!, page: Pagination): [TopGene!]!
+}
+
+type ScoredKeyValue {
+  key: String!
+  score: Float!
+}
+
+type Target {
+  id: ID!
+  name: String!
+  prioritization: [ScoredKeyValue!]!
+}
+
+type TargetDiseaseAssociationRow {
+  datasourceScores: [ScoredKeyValue!]!
+  overall_score: Float!
+  target: Target!
+}
+
+type TargetDiseaseAssociationTable {
+  rows: [TargetDiseaseAssociationRow!]!
+  totalCount: Int
 }
 
 type TopGene {

@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { GraphqlService } from './graphql.service';
 import GraphQLJSON from 'graphql-type-json';
 import { ClickhouseModule } from '@/clickhouse/clickhouse.module';
-import { ClickhouseResolver } from './clickhouse.resolver';
+import { ClickhouseResolver, TargetResolver } from './clickhouse.resolver';
+import { DataLoaderModule } from '@/dataloader';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { ClickhouseResolver } from './clickhouse.resolver';
       path: '/graphql',
     }),
     ClickhouseModule,
+    DataLoaderModule,
   ],
-  providers: [GraphqlResolver, ClickhouseResolver, GraphqlService],
+  providers: [GraphqlResolver, ClickhouseResolver, TargetResolver, GraphqlService],
 })
 export class GraphqlModule {}
