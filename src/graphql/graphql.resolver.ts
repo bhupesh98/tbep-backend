@@ -6,7 +6,7 @@ import { RedisService } from '@/redis/redis.service';
 import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { FieldNode, GraphQLResolveInfo } from 'graphql';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Resolver()
 export class GraphqlResolver {
@@ -22,7 +22,7 @@ export class GraphqlResolver {
     @Args('config', { type: () => [DataRequired], nullable: true }) config: Array<DataRequired> | undefined,
     @Info() info: GraphQLResolveInfo,
   ): Promise<Gene[]> {
-    const bringMeta = info.fieldNodes[0].selectionSet.selections.some(
+    const bringMeta = info.fieldNodes[0].selectionSet?.selections.some(
       (selection: FieldNode) => !['ID', 'common', 'disease'].includes(selection?.name.value),
     );
     const genes = this.graphqlService.getGenes(geneIDs, config, bringMeta);
@@ -32,7 +32,7 @@ export class GraphqlResolver {
   @Query(() => Header)
   async headers(@Args('disease', { type: () => String }) disease: string, @Info() info: GraphQLResolveInfo) {
     const bringCommon =
-      info.fieldNodes[0].selectionSet.selections.find((val: FieldNode) => val.name.value === 'common') !== undefined;
+      info.fieldNodes[0].selectionSet?.selections.find((val: FieldNode) => val.name.value === 'common') !== undefined;
     return this.graphqlService.getHeaders(disease, bringCommon);
   }
 
@@ -42,7 +42,7 @@ export class GraphqlResolver {
     @Args('order', { type: () => Int }) order: number,
     @Context('req') req: Request,
   ): Promise<GeneInteractionOutput> {
-    const userID = req.cookies['user-id'] ?? crypto.randomUUID();
+    const userID: string = req.cookies['user-id'] ?? crypto.randomUUID();
     if (!isUUID(userID)) throw new HttpException('Correct user ID not found', HttpStatus.UNAUTHORIZED);
     if (!req.cookies['user-id']) {
       await this.redisService.redisClient.set(

@@ -25,7 +25,7 @@ export interface GetGenesResult {
 export class GraphqlService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
-  async getGenes(geneIDs: string[], config?: Array<DataRequired> | undefined, bringMeta = true) {
+  async getGenes(geneIDs: string[], config?: Array<DataRequired>, bringMeta = true) {
     const properties = config?.flatMap((item) =>
       item.properties.map((prop) => `${item.disease ? `${item.disease}_` : ''}${prop}`),
     );
@@ -62,8 +62,8 @@ export class GraphqlService {
         }, [])
         .sort(
           (a, b) =>
-            (geneIDsIndexMap.get(a.Input) ?? geneIDsIndexMap.get(a.ID)) -
-            (geneIDsIndexMap.get(b.Input) ?? geneIDsIndexMap.get(b.ID)),
+            (geneIDsIndexMap.get(a.Input) ?? geneIDsIndexMap.get(a.ID) ?? 0) -
+            (geneIDsIndexMap.get(b.Input) ?? geneIDsIndexMap.get(b.ID) ?? 0),
         );
     }
   }

@@ -36,7 +36,7 @@ export class LlmController {
   @Sse('stream')
   async streamResponse(@Query('sid') streamID: string): Promise<Observable<MessageEvent>> {
     return new Observable<MessageEvent>((subscriber) => {
-      (async () => {
+      void (async () => {
         try {
           const promptDto = this.#promptStore.get(streamID);
           if (!promptDto) {
@@ -45,6 +45,11 @@ export class LlmController {
           }
           this.#promptStore.delete(streamID);
           const stream = await this.llmService.generateResponseStream(promptDto);
+          if (!stream) {
+            subscriber.error('Failed to generate response stream');
+            subscriber.complete();
+            return;
+          }
           for await (const chunk of stream) {
             const content = chunk.choices[0].delta.content;
             if (content) {
@@ -53,7 +58,7 @@ export class LlmController {
           }
           subscriber.complete();
         } catch (error) {
-          subscriber.next({ type: 'error', data: `Error: ${error.message}` });
+          subscriber.error(error.message);
           subscriber.complete();
         }
       })();

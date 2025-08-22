@@ -18,5 +18,4 @@ README.md
 .eslintrc.js
 .prettierrc
 src/**/*.test.ts
-test/
 .vscode/

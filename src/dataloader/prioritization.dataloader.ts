@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as DataLoader from 'dataloader';
+import DataLoader from 'dataloader';
 import { ClickhouseService } from '@/clickhouse/clickhouse.service';
 import { ScoredKeyValue } from '@/graphql/models';
 
@@ -10,6 +10,7 @@ export class PrioritizationDataLoader {
   constructor(private readonly clickhouseService: ClickhouseService) {}
 
   createLoader(): DataLoader<string, ScoredKeyValue[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return new DataLoader<string, ScoredKeyValue[]>(this.batchLoadPrioritization.bind(this), {
       cache: true,
       maxBatchSize: 100,

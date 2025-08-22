@@ -90,7 +90,7 @@ enum OrderByEnum {
 
 input Pagination {
   limit: Int = 25
-  page: Int = 0
+  page: Int = 1
 }
 
 type Query {

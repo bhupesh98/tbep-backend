@@ -210,7 +210,7 @@ export class ClickhouseService implements OnApplicationBootstrap {
       for await (const rows of resultSet.stream<Record<string, any>>()) {
         for (const row of rows) {
           const data = row.json();
-          const geneId = data.gene_id;
+          const geneId: string = data.gene_id;
 
           // Remove gene_id from the data and convert to ScoredKeyValue array
           delete data.gene_id;

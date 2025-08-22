@@ -5,7 +5,7 @@ import { Model, PromptDto } from './prompt.dto';
 
 @Injectable()
 export class LlmService {
-  #models: Record<Model, OpenAI> = {
+  #models: Record<Model, OpenAI | null> = {
     'gpt-4o': null,
     'meta/llama-3.1-405b-instruct': null,
   };
@@ -66,7 +66,7 @@ Please strictly follow these guidelines in your responses.`;
       throw new Error(`Model ${model} is not available. Please configure the appropriate API key.`);
     }
 
-    return this.#models[model].chat.completions.create({
+    return this.#models[model]?.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: this.#SYSTEM_PROMPT },

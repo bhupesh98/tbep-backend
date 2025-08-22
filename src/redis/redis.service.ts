@@ -25,14 +25,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  onModuleInit() {
+  async onModuleInit() {
     this.logger.log(`Redis connected on port ${this.redisClient.options.port}`);
-    this.redisClient.config('SET', 'notify-keyspace-events', 'Ex');
-    this._redisClient.subscribe('__keyevent@0__:expired');
+    await this.redisClient.config('SET', 'notify-keyspace-events', 'Ex');
+    await this._redisClient.subscribe('__keyevent@0__:expired');
   }
 
-  onModuleDestroy() {
-    this.redisClient.quit();
+  async onModuleDestroy() {
+    await this.redisClient.quit();
   }
 
   async onKeyExpiration(callback: (key: string) => void | Promise<void>) {

@@ -11,7 +11,7 @@ export const createDriver = async (config: Neo4jConfig) => {
 export function regexp(str: TemplateStringsArray, ...values: string[]) {
   const pattern = str.reduce((acc, part, index) => {
     // Insert the dynamic values between the static parts
-    const value = values[index] ? values[index].replace(/[.*+?^=!:${}()|\[\]\/\\]/g, '\\$&') : '';
+    const value = values[index] ? values[index].replace(/[.*+?^=!:${}()|[\]/\\]/g, '\\$&') : '';
     return acc + part + value;
   }, '');
   // Return the RegExp object

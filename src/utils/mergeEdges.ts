@@ -17,7 +17,7 @@ export function mergeEdgesAndAverageScore(edges: Edge[]): GeneInteraction[] {
     const score = edge.score;
 
     if (edgeMap.has(key)) {
-      const entry = edgeMap.get(key);
+      const entry = edgeMap.get(key)!;
       entry.totalScore += score;
       entry.count++;
       entry.typeScores[type] = score;

@@ -2,9 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import * as process from 'node:process';
-import * as compression from 'compression';
+import compression from 'compression';
 import { ConfigService } from '@nestjs/config';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,7 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (requestOrigin, callback) => {
       if (configService.get('NODE_ENV', 'development') === 'production') {
-        const FRONTEND_URL = configService.get('FRONTEND_URL');
+        const FRONTEND_URL = configService.get<string | undefined>('FRONTEND_URL');
         if (!FRONTEND_URL || requestOrigin === FRONTEND_URL) {
           callback(null, true);
         } else {
