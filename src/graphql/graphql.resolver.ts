@@ -1,12 +1,12 @@
 import { Args, Context, Info, Int, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { RedisService } from '@/redis/redis.service';
-import { isUUID } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
-import type { FieldNode, GraphQLResolveInfo } from 'graphql';
+import { Kind, type GraphQLResolveInfo } from 'graphql';
 import type { Request } from 'express';
+import { z } from 'zod';
+import { ZodValidationException } from 'nestjs-zod';
 
 @Resolver()
 export class GraphqlResolver {
@@ -23,7 +23,7 @@ export class GraphqlResolver {
     @Info() info: GraphQLResolveInfo,
   ): Promise<Gene[]> {
     const bringMeta = info.fieldNodes[0].selectionSet?.selections.some(
-      (selection: FieldNode) => !['ID', 'common', 'disease'].includes(selection?.name.value),
+      (selection) => selection.kind === Kind.FIELD && !['ID', 'common', 'disease'].includes(selection?.name.value),
     );
     const genes = this.graphqlService.getGenes(geneIDs, config, bringMeta);
     return config ? this.graphqlService.filterGenes(genes, config) : genes;
@@ -32,7 +32,9 @@ export class GraphqlResolver {
   @Query(() => Header)
   async headers(@Args('disease', { type: () => String }) disease: string, @Info() info: GraphQLResolveInfo) {
     const bringCommon =
-      info.fieldNodes[0].selectionSet?.selections.find((val: FieldNode) => val.name.value === 'common') !== undefined;
+      info.fieldNodes[0].selectionSet?.selections.find(
+        (val) => val.kind === Kind.FIELD && val.name.value === 'common',
+      ) !== undefined;
     return this.graphqlService.getHeaders(disease, bringCommon);
   }
 
@@ -43,7 +45,7 @@ export class GraphqlResolver {
     @Context('req') req: Request,
   ): Promise<GeneInteractionOutput> {
     const userID: string = req.cookies['user-id'] ?? crypto.randomUUID();
-    if (!isUUID(userID)) throw new HttpException('Correct user ID not found', HttpStatus.UNAUTHORIZED);
+    if (z.uuid().safeParse(userID).success === false) throw new ZodValidationException('Correct user ID not found');
     if (!req.cookies['user-id']) {
       await this.redisService.redisClient.set(
         `user:${userID}`,

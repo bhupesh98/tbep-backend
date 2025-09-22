@@ -1,45 +1,17 @@
-import { IsNotEmpty, IsString, MaxLength, IsEnum, IsOptional, IsArray, ValidateNested, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { createZodDto } from 'nestjs-zod';
 
 export enum Model {
-  GPT_4O = 'gpt-4o',
-  LLAMA_3 = 'meta/llama-3.1-405b-instruct',
+  GPT_4O = 'openai:gpt-4o',
+  LLAMA_3 = 'nvidia:meta/llama-3.1-405b-instruct',
 }
 
 /**
- * Chat Window Message format
- * @class Message
+ * Prompt DTO schema
  */
-export class Message {
-  /**
-   * Message text
-   */
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(5000)
-  content: string;
+export const PromptDtoSchema = z.object({
+  model: z.enum(Model).optional(),
+  messages: z.array(z.any()).optional(),
+});
 
-  /**
-   * Message sender
-   */
-  @IsString()
-  @IsIn(['user', 'assistant'])
-  role: 'user' | 'assistant';
-}
-
-export class PromptDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(1000)
-  question: string;
-
-  @IsEnum(Model)
-  @IsOptional()
-  model?: Model;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => Message)
-  prevMessages?: Message[];
-}
+export class PromptDto extends createZodDto(PromptDtoSchema) {}

@@ -9,6 +9,8 @@ import { AlgorithmModule } from './algorithm/algorithm.module';
 import { RedisModule } from './redis/redis.module';
 import { RedisService } from '@/redis/redis.service';
 import { ClickhouseModule } from './clickhouse/clickhouse.module';
+import { APP_PIPE } from '@nestjs/core';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 @Module({
   imports: [
@@ -37,6 +39,12 @@ import { ClickhouseModule } from './clickhouse/clickhouse.module';
       exports: [RedisService],
     },
     ClickhouseModule,
+  ],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
   ],
   controllers: [AppController],
 })

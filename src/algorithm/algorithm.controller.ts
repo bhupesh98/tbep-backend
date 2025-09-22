@@ -10,8 +10,6 @@ import {
   ParseIntPipe,
   Post,
   Query,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { AlgorithmService } from '@/algorithm/algorithm.service';
 import { GraphConfigDto } from '@/algorithm/algorithm.dto';
@@ -34,7 +32,6 @@ export class AlgorithmController {
 
   @Post('renew-session')
   @HttpCode(HttpStatus.ACCEPTED)
-  @UsePipes(new ValidationPipe({ transform: true }))
   async renewSession(@Body() graphConfig: GraphConfigDto) {
     if (await this.algoService.renewSession(graphConfig)) return;
     throw new HttpException('Graph already exists', HttpStatus.CONFLICT);
