@@ -1,9 +1,13 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { GenePropertyCategoryEnum } from './GeneProperty.model';
 
 @InputType()
 export class DataRequired {
   @Field(() => String, { nullable: true })
-  disease?: string;
+  diseaseId?: string;
+
+  @Field(() => GenePropertyCategoryEnum)
+  category: GenePropertyCategoryEnum;
 
   @Field(() => [String])
   properties: string[];

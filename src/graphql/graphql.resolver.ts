@@ -1,6 +1,6 @@
 import { Args, Context, Info, Int, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
-import { DataRequired, Gene, GeneInteractionOutput, Header, InteractionInput } from './models';
+import { GeneMetadata, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { RedisService } from '@/redis/redis.service';
 import { ConfigService } from '@nestjs/config';
 import { Kind, type GraphQLResolveInfo } from 'graphql';
@@ -16,17 +16,9 @@ export class GraphqlResolver {
     private readonly configService: ConfigService,
   ) {}
 
-  @Query(() => [Gene])
-  async genes(
-    @Args('geneIDs', { type: () => [String] }) geneIDs: string[],
-    @Args('config', { type: () => [DataRequired], nullable: true }) config: Array<DataRequired> | undefined,
-    @Info() info: GraphQLResolveInfo,
-  ): Promise<Gene[]> {
-    const bringMeta = info.fieldNodes[0].selectionSet?.selections.some(
-      (selection) => selection.kind === Kind.FIELD && !['ID', 'common', 'disease'].includes(selection?.name.value),
-    );
-    const genes = this.graphqlService.getGenes(geneIDs, config, bringMeta);
-    return config ? this.graphqlService.filterGenes(genes, config) : genes;
+  @Query(() => [GeneMetadata])
+  async genes(@Args('geneIDs', { type: () => [String] }) geneIDs: string[]): Promise<GeneMetadata[]> {
+    return this.graphqlService.getGenes(geneIDs);
   }
 
   @Query(() => Header)

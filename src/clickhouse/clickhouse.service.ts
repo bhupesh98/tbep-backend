@@ -10,7 +10,12 @@ import {
   Pagination,
   ScoredKeyValue,
   TargetDiseaseAssociationRow,
+  DataRequired,
+  GeneProperty,
+  GenePropertyCategoryEnum,
+  GenePropertyData,
 } from '@/graphql/models';
+import { GraphQLError } from 'graphql/error/GraphQLError';
 
 @Injectable()
 export class ClickhouseService implements OnApplicationBootstrap {
@@ -23,6 +28,10 @@ export class ClickhouseService implements OnApplicationBootstrap {
       username: this.configService.get<string>('CLICKHOUSE_USER', 'default'),
       password: this.configService.get<string>('CLICKHOUSE_PASSWORD', ''),
     });
+  }
+
+  async onApplicationBootstrap() {
+    await this.#runMigrations();
   }
 
   async getTopGenesByDisease(diseaseId: string, { page, limit }: Pagination): Promise<TopGene[]> {
@@ -178,24 +187,10 @@ export class ClickhouseService implements OnApplicationBootstrap {
     const query = `
       SELECT
         gene_id,
-        \`Membrane protein\`,
-        \`Secreted protein\`,
-        \`Known safety events\`,
-        \`Predicted pockets\`,
-        \`Ligand binder\`,
-        \`Small molecule binder\`,
-        \`Genetic constraint\`,
-        \`Paralogues\`,
-        \`Mouse ortholog identity\`,
-        \`Cancer driver gene\`,
-        \`Gene essentiality\`,
-        \`Mouse models\`,
-        \`Chemical probes\`,
-        \`Target in clinic\`,
-        \`Tissue specificity\`,
-        \`Tissue distribution\`
+        groupArray(concat(property_name, ',', toString(score))) AS properties
       FROM target_prioritization_factors
       WHERE gene_id IN ({geneIds:Array(String)})
+      GROUP BY gene_id
     `;
 
     try {
@@ -207,20 +202,19 @@ export class ClickhouseService implements OnApplicationBootstrap {
 
       const resultMap = new Map<string, ScoredKeyValue[]>();
 
-      for await (const rows of resultSet.stream<Record<string, any>>()) {
+      for await (const rows of resultSet.stream<{ gene_id: string; properties: string[] }>()) {
         for (const row of rows) {
           const data = row.json();
-          const geneId: string = data.gene_id;
+          // Transform properties from string array to ScoredKeyValue array
+          const scoredKeyValues = data.properties.map((propStr: string) => {
+            const [key, score] = propStr.split(',');
+            return {
+              key,
+              score: Number.parseFloat(score),
+            };
+          });
 
-          // Remove gene_id from the data and convert to ScoredKeyValue array
-          delete data.gene_id;
-
-          const scoredKeyValues = Object.entries(data).map(([key, score]) => ({
-            key,
-            score: score as number,
-          }));
-
-          resultMap.set(geneId, scoredKeyValues);
+          resultMap.set(data.gene_id, scoredKeyValues);
         }
       }
       return resultMap;
@@ -230,8 +224,177 @@ export class ClickhouseService implements OnApplicationBootstrap {
     }
   }
 
-  async onApplicationBootstrap() {
-    await this.#runMigrations();
+  async getGeneProperties(geneIds: string[], config: DataRequired[]): Promise<GeneProperty[]> {
+    const genePropertyMap = new Map<string, GenePropertyData[]>();
+
+    for (const configItem of config) {
+      const { category, properties } = configItem;
+      let diseaseId = configItem.diseaseId;
+      if (properties.length === 0) continue;
+      let query: string;
+      let queryParams: Record<string, any>;
+
+      switch (category) {
+        case GenePropertyCategoryEnum.DIFFERENTIAL_EXPRESSION: {
+          if (diseaseId) {
+            query = `
+              SELECT gene_id, groupArray(concat(property_name, ',', toString(score))) AS properties
+              FROM differential_expression
+              WHERE disease_id = {diseaseId:String}
+                AND gene_id IN ({geneIds:Array(String)})
+                AND property_name IN ({properties:Array(String)})
+              GROUP BY gene_id
+            `;
+            queryParams = { geneIds, diseaseId, properties };
+          } else {
+            throw new GraphQLError('Disease ID is required for DEG category', {
+              extensions: { code: 'BAD_USER_INPUT' },
+            });
+          }
+          break;
+        }
+
+        case GenePropertyCategoryEnum.OPEN_TARGETS: {
+          if (diseaseId) {
+            const dataSourceProperties = properties.filter((prop) => prop !== 'Overall_Association Score');
+            if (dataSourceProperties.length === properties.length) {
+              query = `
+                SELECT gene_id, groupArray(concat(datasource_id, ',', toString(score))) AS properties
+                FROM datasource_association_score
+                WHERE disease_id = {diseaseId:String}
+                AND gene_id IN ({geneIds:Array(String)})
+                AND datasource_id IN ({properties:Array(String)})
+                GROUP BY gene_id
+              `;
+              queryParams = { geneIds, diseaseId, properties };
+            } else if (dataSourceProperties.length === 0) {
+              query = `
+                SELECT gene_id, groupArray(concat('Overall_Association Score,', toString(score))) AS properties
+                FROM overall_association_score
+                WHERE disease_id = {diseaseId:String}
+                AND gene_id IN ({geneIds:Array(String)})
+                GROUP BY gene_id
+              `;
+              queryParams = { geneIds, diseaseId };
+            } else {
+              query = `
+                SELECT gene_id, groupArray(concat(datasource_id, ',', toString(score))) AS properties
+                FROM datasource_association_score
+                WHERE disease_id = {diseaseId:String}
+                AND gene_id IN ({geneIds:Array(String)})
+                AND datasource_id IN ({properties:Array(String)})
+                GROUP BY gene_id
+                UNION ALL
+                SELECT gene_id, groupArray(concat('Overall_Association Score,', toString(score))) AS properties
+                FROM overall_association_score
+                WHERE disease_id = {diseaseId:String}
+                AND gene_id IN ({geneIds:Array(String)})
+                GROUP BY gene_id
+              `;
+              queryParams = { geneIds, diseaseId, properties: dataSourceProperties };
+            }
+          } else {
+            throw new GraphQLError('Disease ID is required for OpenTargets category', {
+              extensions: { code: 'BAD_USER_INPUT' },
+            });
+          }
+          break;
+        }
+
+        case GenePropertyCategoryEnum.OT_PRIORITIZATION: {
+          query = `
+            SELECT gene_id, groupArray(concat(property_name, ',', toString(score))) AS properties
+            FROM target_prioritization_factors
+            WHERE gene_id IN ({geneIds:Array(String)})
+            AND property_name IN ({properties:Array(String)})
+            GROUP BY gene_id
+          `;
+          queryParams = { geneIds, properties };
+          diseaseId = undefined;
+          break;
+        }
+
+        case GenePropertyCategoryEnum.PATHWAY: {
+          query = `
+            SELECT gene_id, groupArray(concat(property_name, ',', toString(score))) AS properties
+            FROM pathway
+            WHERE gene_id IN ({geneIds:Array(String)})
+            AND property_name IN ({properties:Array(String)})
+            GROUP BY gene_id
+          `;
+          queryParams = { geneIds, properties };
+          diseaseId = undefined;
+          break;
+        }
+
+        case GenePropertyCategoryEnum.DRUGGABILITY: {
+          query = `
+            SELECT gene_id, groupArray(concat(property_name, ',', toString(score))) AS properties
+            FROM druggability
+            WHERE gene_id IN ({geneIds:Array(String)})
+            AND property_name IN ({properties:Array(String)})
+            GROUP BY gene_id
+          `;
+          queryParams = { geneIds, properties };
+          diseaseId = undefined;
+          break;
+        }
+
+        case GenePropertyCategoryEnum.TISSUE_EXPRESSION: {
+          // TISSUE_EXPRESSION
+          query = `
+            SELECT gene_id, groupArray(concat(property_name, ',', toString(score))) AS properties
+            FROM tissue_specificity
+            WHERE gene_id IN ({geneIds:Array(String)})
+            AND property_name IN ({properties:Array(String)})
+            GROUP BY gene_id
+          `;
+          queryParams = { geneIds, properties };
+          diseaseId = undefined;
+          break;
+        }
+
+        default:
+          this.logger.warn(`Unknown category: ${category}`);
+          continue;
+      }
+
+      try {
+        const resultSet = await this.client.query({
+          query,
+          query_params: queryParams,
+          format: 'JSONEachRow',
+        });
+
+        for await (const rows of resultSet.stream<{ gene_id: string; properties: string[] }>()) {
+          for (const row of rows) {
+            const data = row.json();
+            const properties = data.properties.map((propStr: string) => {
+              const [key, score] = propStr.split(',');
+              return {
+                key,
+                score: Number.parseFloat(score),
+                category,
+                diseaseId,
+              };
+            });
+
+            if (!genePropertyMap.has(data.gene_id)) {
+              genePropertyMap.set(data.gene_id, []);
+            }
+            genePropertyMap.get(data.gene_id)?.push(...properties);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Failed to fetch ${category} properties:`, error);
+      }
+    }
+
+    // Convert map to final result format
+    return geneIds.map((geneId) => ({
+      ID: geneId,
+      data: genePropertyMap.get(geneId) || [],
+    }));
   }
 
   async #runMigrations() {
@@ -246,7 +409,7 @@ export class ClickhouseService implements OnApplicationBootstrap {
       return;
     }
 
-    await this.client.exec({
+    await this.client.command({
       query: `
         CREATE TABLE IF NOT EXISTS migrations (
           version String,
@@ -256,38 +419,43 @@ export class ClickhouseService implements OnApplicationBootstrap {
       `,
     });
 
-    const appliedVersions = await this.#getAppliedMigrations();
+    const lastAppliedVersion = await this.#getLastAppliedVersion();
 
     for (const file of files) {
       const version = file.split('_')[0];
-      if (!appliedVersions.includes(version)) {
-        const sql = await fs.readFile(join(migrationDir, file), 'utf8');
-        this.logger.log(`Running migration ${file}...`);
-        try {
-          await this.client.exec({
-            query: sql,
+      if (lastAppliedVersion && Number(version) <= Number(lastAppliedVersion)) {
+        continue; // Skip already applied migrations
+      }
+      const sql = await fs.readFile(join(migrationDir, file), 'utf8');
+      this.logger.log(`Running migration ${file}...`);
+      try {
+        sql.split(';').forEach(async (stmt) => {
+          await this.client.command({
+            query: stmt.trim(),
           });
-          await this.#markMigrationAsApplied(version);
-          this.logger.log(`Migration ${file} applied.`);
-        } catch (err) {
-          this.logger.error(`Migration ${file} failed: ${err?.message || err}`);
-        }
+        });
+        await this.#markMigrationAsApplied(version);
+        this.logger.log(`Migration ${file} applied.`);
+      } catch (err) {
+        this.logger.error(`Migration ${file} failed: ${err?.message || err}`);
       }
     }
   }
 
-  async #getAppliedMigrations(): Promise<string[]> {
+  async #getLastAppliedVersion(): Promise<string | null> {
     const result = await this.client.query({
-      query: `SELECT version FROM migrations`,
+      query: `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`,
       format: 'JSON',
     });
     const rows = await result.json<{ data: Array<Record<string, any>> }>();
-    return rows.data.map((row) => row['version']);
+    return rows.data.length > 0 ? rows.data[0]['version'] : null;
   }
 
   async #markMigrationAsApplied(version: string) {
-    await this.client.exec({
-      query: `INSERT INTO migrations (version) VALUES ('${version}')`,
+    await this.client.insert({
+      table: 'migrations',
+      values: [{ version }],
+      format: 'JSONEachRow',
     });
   }
 }

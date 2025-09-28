@@ -3,24 +3,14 @@
 # ------------------------------------------------------
 
 input DataRequired {
-  disease: String
+  category: GenePropertyCategoryEnum!
+  diseaseId: String
   properties: [String!]!
 }
 
 type Description {
   description: String
   name: String!
-}
-
-type Gene {
-  Aliases: String
-  Description: String
-  Gene_name: String
-  ID: ID!
-  Input: String!
-  common: JSON
-  disease: JSON
-  hgnc_gene_id: String
 }
 
 type GeneBase {
@@ -41,6 +31,37 @@ type GeneInteractionOutput {
   genes: [GeneBase!]!
   graphName: String
   links: [GeneInteraction!]
+}
+
+type GeneMetadata {
+  Aliases: String
+  Description: String
+  Gene_name: String
+  ID: ID!
+  Input: String!
+  hgnc_gene_id: String
+}
+
+type GeneProperty {
+  ID: ID!
+  data: [GenePropertyData!]!
+}
+
+"""Available categories for gene properties"""
+enum GenePropertyCategoryEnum {
+  DIFFERENTIAL_EXPRESSION
+  DRUGGABILITY
+  OPEN_TARGETS
+  OT_PRIORITIZATION
+  PATHWAY
+  TISSUE_EXPRESSION
+}
+
+type GenePropertyData {
+  category: GenePropertyCategoryEnum!
+  diseaseId: String
+  key: String!
+  score: Float!
 }
 
 type Header {
@@ -94,7 +115,8 @@ input Pagination {
 }
 
 type Query {
-  genes(config: [DataRequired!], geneIDs: [String!]!): [Gene!]!
+  geneProperties(config: [DataRequired!]!, geneIds: [String!]!): [GeneProperty!]!
+  genes(geneIDs: [String!]!): [GeneMetadata!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
   headers(disease: String!): Header!
   targetDiseaseAssociationTable(diseaseId: String!, geneIds: [String!]!, orderBy: OrderByEnum = SCORE, page: Pagination): TargetDiseaseAssociationTable!

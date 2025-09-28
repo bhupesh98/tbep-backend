@@ -1,3 +1,5 @@
+-- DO NOT EDIT
+
 CREATE TABLE IF NOT EXISTS target_prioritization_factors (
     gene_id String,
     gene_name String,

@@ -1,7 +1,15 @@
 import { ClickhouseService } from '@/clickhouse/clickhouse.service';
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
-import { TopGene, OrderByEnum, ScoredKeyValue, Target, TargetDiseaseAssociationTable } from './models';
-import { Pagination } from './models/Pagination.model';
+import {
+  TopGene,
+  OrderByEnum,
+  ScoredKeyValue,
+  Target,
+  TargetDiseaseAssociationTable,
+  DataRequired,
+  GeneProperty,
+} from './models';
+import { Pagination } from './models/Pagination.input';
 import { DataLoaderService } from '@/dataloader';
 
 @Resolver()
@@ -36,6 +44,14 @@ export class ClickhouseResolver {
       pagination.limit = 25; // Default limit
     }
     return this.clickhouseService.getTargetDiseaseAssociationTable(geneIds, diseaseId, orderBy, pagination);
+  }
+
+  @Query(() => [GeneProperty])
+  async geneProperties(
+    @Args('geneIds', { type: () => [String] }) geneIds: string[],
+    @Args('config', { type: () => [DataRequired] }) config: DataRequired[],
+  ) {
+    return this.clickhouseService.getGeneProperties(geneIds, config);
   }
 }
 
