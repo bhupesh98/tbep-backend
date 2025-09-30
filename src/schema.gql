@@ -64,9 +64,13 @@ type GenePropertyData {
   score: Float!
 }
 
-type Header {
-  common: [Description!]
-  disease: [Description!]
+type Headers {
+  differentialExpression: [Description!]
+  druggability: [Description!]
+  openTargets: [Description!]
+  pathway: [Description!]
+  targetPrioritization: [Description!]
+  tissueSpecificity: [Description!]
 }
 
 input InteractionInput {
@@ -118,7 +122,7 @@ type Query {
   geneProperties(config: [DataRequired!]!, geneIds: [String!]!): [GeneProperty!]!
   genes(geneIDs: [String!]!): [GeneMetadata!]!
   getGeneInteractions(input: InteractionInput!, order: Int!): GeneInteractionOutput!
-  headers(disease: String!): Header!
+  headers(diseaseId: String!): Headers!
   targetDiseaseAssociationTable(diseaseId: String!, geneIds: [String!]!, orderBy: OrderByEnum = SCORE, page: Pagination): TargetDiseaseAssociationTable!
   topGenesByDisease(diseaseId: String!, page: Pagination): [TopGene!]!
 }

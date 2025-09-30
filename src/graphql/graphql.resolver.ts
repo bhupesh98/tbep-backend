@@ -1,12 +1,12 @@
-import { Args, Context, Info, Int, Query, Resolver } from '@nestjs/graphql';
 import { GraphqlService } from '@/graphql/graphql.service';
-import { GeneMetadata, GeneInteractionOutput, Header, InteractionInput } from './models';
 import { RedisService } from '@/redis/redis.service';
 import { ConfigService } from '@nestjs/config';
-import { Kind, type GraphQLResolveInfo } from 'graphql';
+import { Args, Context, Info, Int, Query, Resolver } from '@nestjs/graphql';
 import type { Request } from 'express';
-import { z } from 'zod';
 import { ZodValidationException } from 'nestjs-zod';
+import { z } from 'zod';
+import { GeneInteractionOutput, GeneMetadata, Headers, InteractionInput } from './models';
+import { Kind, type GraphQLResolveInfo } from 'graphql';
 
 @Resolver()
 export class GraphqlResolver {
@@ -21,13 +21,25 @@ export class GraphqlResolver {
     return this.graphqlService.getGenes(geneIDs);
   }
 
-  @Query(() => Header)
-  async headers(@Args('disease', { type: () => String }) disease: string, @Info() info: GraphQLResolveInfo) {
-    const bringCommon =
-      info.fieldNodes[0].selectionSet?.selections.find(
-        (val) => val.kind === Kind.FIELD && val.name.value === 'common',
-      ) !== undefined;
-    return this.graphqlService.getHeaders(disease, bringCommon);
+  @Query(() => Headers)
+  async headers(
+    @Args('diseaseId', { type: () => String }) diseaseId: string,
+    @Info() info: GraphQLResolveInfo,
+  ): Promise<Headers> {
+    const key = `headers:common`;
+    let result: Headers | null = null;
+    const cached = await this.redisService.redisClient.get(key);
+    if (cached) {
+      result = JSON.parse(cached) as Headers;
+      const isDbQueryNeeded =
+        info.fieldNodes[0].selectionSet?.selections.find(
+          (val) => val.kind === Kind.FIELD && val.name.value === 'differentialExpression',
+        ) !== undefined;
+      if (isDbQueryNeeded === false) return result;
+    }
+    result = await this.graphqlService.getHeaders(diseaseId, result);
+    await this.redisService.redisClient.set(key, JSON.stringify(result), 'EX', 86400);
+    return result;
   }
 
   @Query(() => GeneInteractionOutput)

@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { Neo4jService } from '@/neo4j/neo4j.service';
+import { GeneInteractionQueryOutput } from '@/interfaces';
 import {
   FIRST_ORDER_GENES_QUERY,
   GENE_INTERACTIONS_QUERY,
-  GET_GENES_QUERY,
   GET_HEADERS_QUERY,
+  GET_GENES_QUERY,
 } from '@/neo4j/neo4j.constants';
-import type { Description, GeneMetadata, GeneInteractionOutput, Header, InteractionInput } from './models';
-import { createHash } from 'node:crypto';
+import { Neo4jService } from '@/neo4j/neo4j.service';
 import { mergeEdgesAndAverageScore } from '@/utils';
-import { GeneInteractionQueryOutput } from '@/interfaces';
+import { Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import type { Description, GeneInteractionOutput, GeneMetadata, Headers, InteractionInput } from './models';
 
 export interface GetGenesResult {
   ID: string;
@@ -93,16 +93,34 @@ export class GraphqlService {
     return createHash('sha256').update(query).digest('hex');
   }
 
-  async getHeaders(disease: string, bringCommon: boolean): Promise<Header> {
+  async getHeaders(diseaseId: string, result: Headers | null): Promise<Headers> {
     const session = this.neo4jService.getSession();
-    const result = await session.run<Record<'diseaseHeader' | 'commonHeader', Description[]>>(
-      GET_HEADERS_QUERY(bringCommon),
-      { disease },
-    );
+    const res = await session.run<
+      Record<
+        | 'differentialExpression'
+        | 'openTargets'
+        | 'targetPrioritization'
+        | 'druggability'
+        | 'pathway'
+        | 'tissueSpecificity',
+        Description[]
+      >
+    >(GET_HEADERS_QUERY(!!result), {
+      diseaseId,
+    });
     await this.neo4jService.releaseSession(session);
-    return {
-      disease: result.records[0].get('diseaseHeader'),
-      common: bringCommon ? result.records[0].get('commonHeader') : [],
-    };
+    if (result) {
+      result.differentialExpression = res.records[0].get('differentialExpression');
+    } else {
+      result = {
+        differentialExpression: res.records[0].get('differentialExpression'),
+        openTargets: res.records[0].get('openTargets'),
+        druggability: res.records[0].get('druggability'),
+        targetPrioritization: res.records[0].get('targetPrioritization'),
+        pathway: res.records[0].get('pathway'),
+        tissueSpecificity: res.records[0].get('tissueSpecificity'),
+      };
+    }
+    return result;
   }
 }

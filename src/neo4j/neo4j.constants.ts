@@ -1,10 +1,27 @@
 export const NEO4J_CONFIG: string = 'NEO4J_CONFIG';
 export const NEO4J_DRIVER: string = 'NEO4J_DRIVER';
 
-export const GET_HEADERS_QUERY = (bringCommon = true) =>
-  `${bringCommon ? 'MATCH (cp:Common&Property) WITH COLLECT(cp { .* }) AS commonHeader' : ''}
-  OPTIONAL MATCH (:Disease { ID: $disease })-[:HAS_PROPERTY]-(dp:Property)
-  RETURN COLLECT( dp { .* }) AS diseaseHeader ${bringCommon ? ', commonHeader' : ''}`;
+export const GET_HEADERS_QUERY = (cache = false) =>
+  `MATCH (p:Property)${cache ? '<-[:HAS_PROPERTY]-(:Disease { ID: $diseaseId })' : ''}
+  ${
+    !cache
+      ? `WHERE NOT EXISTS((p)<-[:HAS_PROPERTY]-(:Disease)) OR 
+         EXISTS((p)<-[:HAS_PROPERTY]-(:Disease { ID: $diseaseId }))`
+      : 'WHERE p.category = "DEG"'
+  }
+  WITH COLLECT(p) AS allProps
+  RETURN
+  ${
+    cache
+      ? ''
+      : `[prop IN allProps WHERE prop.category = "OpenTargets" | { name: prop.name, description: prop.description }] AS openTargets,
+        [prop IN allProps WHERE prop.category = "OT_Prioritization" | { name: prop.name, description: prop.description }] AS targetPrioritization,
+        [prop IN allProps WHERE prop.category = "Druggability" | { name: prop.name, description: prop.description }] AS druggability,
+        [prop IN allProps WHERE prop.category = "Pathway" | { name: prop.name, description: prop.description }] AS pathway,
+        [prop IN allProps WHERE prop.category = "TE" | { name: prop.name, description: prop.description }] AS tissueSpecificity,`
+  }
+    [prop IN allProps WHERE prop.category = "DEG" | { name: prop.name, description: prop.description }] AS differentialExpression
+  `;
 
 export const GET_DISEASES_QUERY = `MATCH (d:Disease) RETURN d { .* } AS diseases;`;
 

@@ -10,10 +10,22 @@ export class Description {
 }
 
 @ObjectType()
-export class Header {
+export class Headers {
   @Field(() => [Description], { nullable: true })
-  disease?: Description[];
+  differentialExpression?: Description[];
 
   @Field(() => [Description], { nullable: true })
-  common?: Description[];
+  openTargets?: Description[];
+
+  @Field(() => [Description], { nullable: true })
+  targetPrioritization?: Description[];
+
+  @Field(() => [Description], { nullable: true })
+  druggability?: Description[];
+
+  @Field(() => [Description], { nullable: true })
+  pathway?: Description[];
+
+  @Field(() => [Description], { nullable: true })
+  tissueSpecificity?: Description[];
 }
