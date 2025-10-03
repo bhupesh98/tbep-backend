@@ -4,6 +4,8 @@ import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, createProviderRegistry, ModelMessage, streamText, UIMessage } from 'ai';
 import { Model, PromptDto } from './prompt.dto';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { updateActiveObservation, updateActiveTrace } from '@langfuse/tracing';
+import { trace } from '@opentelemetry/api';
 
 @Injectable()
 export class LlmService {
@@ -74,12 +76,31 @@ Please strictly follow these guidelines in your responses.`;
       ...convertToModelMessages((promptDto.messages as UIMessage[]) ?? []),
     ];
 
+    // Extract the last user message for tracing input
+    const inputText = messages.at(-1);
+
+    // Update the active observation with input for tracing
+    updateActiveObservation({ input: inputText?.content });
+
     return streamText({
       model: this.modelRegistry.languageModel(model),
       messages,
       temperature: 0,
       topP: 0.7,
       maxOutputTokens: 1024,
+      // Enable Vercel AI SDK telemetry for automatic tracing
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'llm-generate-response',
+      },
+      onFinish: async (result) => {
+        // Update observation and trace with the output after stream completes
+        updateActiveObservation({ output: result.text });
+        updateActiveTrace({ output: result.text });
+
+        // Manually end the span after the stream has finished
+        trace.getActiveSpan()?.end();
+      },
     });
   }
 }

@@ -5,10 +5,14 @@ import * as process from 'node:process';
 import compression from 'compression';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import { initializeLangfuseTracing } from './instrumentation';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Initialize Langfuse tracing after ConfigService is available
+  initializeLangfuseTracing(configService);
   app.enableCors({
     origin: (requestOrigin, callback) => {
       if (configService.get('NODE_ENV', 'development') === 'production') {

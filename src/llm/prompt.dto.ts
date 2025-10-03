@@ -12,6 +12,8 @@ export enum Model {
 export const PromptDtoSchema = z.object({
   model: z.enum(Model).optional(),
   messages: z.array(z.any()).optional(),
+  sessionId: z.string().optional(),
+  userId: z.string().optional(),
 });
 
 export class PromptDto extends createZodDto(PromptDtoSchema) {}
